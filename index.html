@@ -142,6 +142,9 @@ header.app .avatar{width:52px;height:52px}
 .usage .u-chip b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--accent)}
 .usage .u-chip i{font-style:normal;color:var(--muted);font-size:11.5px}
 .usage .u-more{color:var(--accent);text-decoration:none;font-size:12px}
+.gate-card .usage{justify-content:center;gap:6px;margin:0 0 4px;
+  padding-bottom:11px;border-bottom:1px solid var(--line)}
+.gate-card .usage .u-t{width:100%;text-align:center;font-size:12px}
 .usage .u-more:hover{text-decoration:underline}
 header.app .stamp{font-size:20px;text-shadow:2px 2px 0 var(--stamp-back);margin:0;align-items:flex-end}
 header.app .stamp span:first-child{font-size:15px}
@@ -197,6 +200,7 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 <body>
 <div class="gate" id="gate" hidden>
   <form class="gate-card" id="gate-form" autocomplete="off">
+    <div class="usage" id="usage-gate" hidden></div>
     <h2>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h2>
     <p>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
     <input type="text" id="gate-pass" class="masked" name="sca-access-code"
@@ -681,8 +685,8 @@ try {
  */
 (function loadUsage() {
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwPgC4WvRnV26rlJhsGqKy_oUbDvSTBtIahNSBKAurciGx1Wl06d4NhqO0rc1P991QSDQ/exec';
-  const box = document.getElementById('usage');
-  if (!box) return;
+  const boxes = ['usage', 'usage-gate'].map((id) => document.getElementById(id)).filter(Boolean);
+  if (!boxes.length) return;
 
   const cb = 'scaUsage' + Date.now().toString(36);
   const s = document.createElement('script');
@@ -697,13 +701,13 @@ try {
       const sca = (d && d.apps && d.apps.sca) || {};
       const ceph = (d && d.apps && d.apps.ceph) || {};
       const today = (sca.today || 0) + (ceph.today || 0);
-      box.innerHTML =
+      const html =
         '<span class="u-t">สถิติการใช้งาน</span>' +
         `<span class="u-chip">SCA <b>${n(sca.users)}</b> คน <i>เปิด ${n(sca.opens)} ครั้ง</i></span>` +
         `<span class="u-chip">Ceph Protractor <b>${n(ceph.users)}</b> คน <i>เปิด ${n(ceph.opens)} ครั้ง</i></span>` +
         `<span class="u-chip">วันนี้ <b>${n(today)}</b> คน</span>` +
         '<a class="u-more" href="https://mathold.github.io/sca-app/stats/" target="_blank" rel="noopener">ดูสถิติทั้งหมด →</a>';
-      box.hidden = false;
+      boxes.forEach((b) => { b.innerHTML = html; b.hidden = false; });
     } catch (e) {}
   };
   s.onerror = () => cleanup();
