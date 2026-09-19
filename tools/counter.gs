@@ -107,4 +107,5 @@ function setup() {
   sh.setColumnWidth(1, 260);
   sh.setColumnWidth(2, 140);
   sh.setColumnWidth(3, 140);
+  sh.getRange(r, 1, 1000, 1).setNumberFormat('yyyy-mm-dd');
 }
