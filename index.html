@@ -124,6 +124,16 @@ ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
   text-shadow:2.5px 2.5px 0 var(--stamp-back);display:flex;flex-direction:column;gap:2px}
 .stamp span:first-child{font-size:17px;letter-spacing:.1em;opacity:.95}
 .ver{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);margin:6px 0 0}
+
+/* ---------- แถบสถิติการใช้งาน ---------- */
+.usage{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0 0;font-size:12.5px}
+.usage .u-t{color:var(--muted)}
+.usage .u-chip{display:inline-flex;align-items:baseline;gap:5px;
+  border:1px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--card);white-space:nowrap}
+.usage .u-chip b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--accent)}
+.usage .u-chip i{font-style:normal;color:var(--muted);font-size:11.5px}
+.usage .u-more{color:var(--accent);text-decoration:none;font-size:12px}
+.usage .u-more:hover{text-decoration:underline}
 header.app .stamp{font-size:20px;text-shadow:2px 2px 0 var(--stamp-back);margin:0;align-items:flex-end}
 header.app .stamp span:first-child{font-size:15px}
 .foot-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
@@ -199,6 +209,7 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
     <h1>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h1>
     <p class="tag">อัปโหลดตาราง SCA หรือกรอกเอง · คำนวณในเครื่อง ข้อมูลไม่ถูกส่งออก</p>
     <p class="ver" id="ver"></p>
+    <div class="usage" id="usage" hidden></div>
   </div>
   <div class="head-side">
     <div class="stamp" aria-label="ลิขสิทธิ์ โดย หมอผิ่น"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
@@ -649,6 +660,43 @@ try {
   const last = localStorage.getItem('sca.last');
   if (last) { fillForm(JSON.parse(last)); document.getElementById('load-msg').textContent = 'คืนค่าที่กรอกค้างไว้ครั้งก่อนแล้ว'; }
 } catch {}
+
+/* ---------- แถบสถิติการใช้งาน ----------
+ * ดึงจาก Apps Script ตัวเดียวกับหน้า /stats/ ด้วย JSONP
+ * (Apps Script ไม่ส่ง CORS header จึงใช้ fetch ตรง ๆ ไม่ได้)
+ * โหลดไม่ได้ (ออฟไลน์/ถูกบล็อก) = ซ่อนแถบไว้เฉย ๆ ไม่รบกวนการใช้งาน
+ */
+(function loadUsage() {
+  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwPgC4WvRnV26rlJhsGqKy_oUbDvSTBtIahNSBKAurciGx1Wl06d4NhqO0rc1P991QSDQ/exec';
+  const box = document.getElementById('usage');
+  if (!box) return;
+
+  const cb = 'scaUsage' + Date.now().toString(36);
+  const s = document.createElement('script');
+  const timer = setTimeout(() => { cleanup(); }, 20000);
+  function cleanup() { clearTimeout(timer); delete window[cb]; s.remove(); }
+
+  const n = (v) => (typeof v === 'number' ? v : 0).toLocaleString('th-TH');
+
+  window[cb] = (d) => {
+    cleanup();
+    try {
+      const sca = (d && d.apps && d.apps.sca) || {};
+      const ceph = (d && d.apps && d.apps.ceph) || {};
+      const today = (sca.today || 0) + (ceph.today || 0);
+      box.innerHTML =
+        '<span class="u-t">สถิติการใช้งาน</span>' +
+        `<span class="u-chip">SCA <b>${n(sca.users)}</b> คน <i>เปิด ${n(sca.opens)} ครั้ง</i></span>` +
+        `<span class="u-chip">Ceph Protractor <b>${n(ceph.users)}</b> คน <i>เปิด ${n(ceph.opens)} ครั้ง</i></span>` +
+        `<span class="u-chip">วันนี้ <b>${n(today)}</b> คน</span>` +
+        '<a class="u-more" href="https://mathold.github.io/sca-app/stats/" target="_blank" rel="noopener">ดูสถิติทั้งหมด →</a>';
+      box.hidden = false;
+    } catch (e) {}
+  };
+  s.onerror = () => cleanup();
+  s.src = ENDPOINT + '?read=1&callback=' + cb + '&t=' + Date.now();
+  document.body.appendChild(s);
+})();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')
