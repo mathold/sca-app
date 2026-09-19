@@ -3,7 +3,7 @@
  * สำคัญ: ทุกครั้งที่แก้ไฟล์ในแอพ ต้องเปลี่ยนเลข CACHE ข้างล่างด้วย
  * ไม่งั้นเครื่องที่เคยเปิดแล้วจะยังใช้ไฟล์เก่าค้างอยู่
  */
-const CACHE = 'sca-v13';
+const CACHE = 'sca-v14';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './vendor/xlsx.full.min.js',

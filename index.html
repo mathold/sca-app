@@ -140,6 +140,7 @@ header.app .stamp span:first-child{font-size:15px}
 .gate-card button{width:100%}
 .show-pass{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:-4px}
 .show-pass input{width:auto;margin:0}
+#gate-pass.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.12em}
 .gate-msg{font-size:13.5px;color:var(--ext);min-height:1.2em;font-weight:500}
 .gate-msg.info{color:var(--muted);font-weight:400;word-break:break-all;font-family:ui-monospace,monospace;font-size:12px}
 .gate-foot{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:11px;margin-top:3px}
@@ -166,11 +167,12 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 </head>
 <body>
 <div class="gate" id="gate" hidden>
-  <form class="gate-card" id="gate-form">
+  <form class="gate-card" id="gate-form" autocomplete="off">
     <h2>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h2>
     <p>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
-    <input type="password" id="gate-pass" autocomplete="current-password"
-           autocapitalize="none" autocorrect="off" spellcheck="false"
+    <input type="text" id="gate-pass" class="masked" name="sca-access-code"
+           autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+           data-1p-ignore data-lpignore="true" data-form-type="other"
            placeholder="รหัสผ่าน" aria-label="รหัสผ่าน">
     <label class="show-pass"><input type="checkbox" id="gate-show"> แสดงรหัสที่พิมพ์</label>
     <button type="submit" class="primary">เข้าใช้งาน</button>
@@ -304,7 +306,25 @@ function showGate(){ gate.hidden = false; shell.hidden = true;
   }
   let remembered = null;
   try { remembered = localStorage.getItem(UNLOCK_KEY); } catch {}
-  if (remembered === PASS_HASH) openApp(); else showGate();
+  if (remembered === PASS_HASH) { openApp(); return; }
+
+  // ลิงก์ปลดล็อกในตัว เช่น  .../sca-app/#code=xxxx  (ใช้ครั้งเดียวแล้วลบออกจาก URL)
+  const c = location.hash.match(/^#code=(.+)$/);
+  if (c) {
+    try {
+      const code = decodeURIComponent(c[1]);
+      const tries = [code, code.trim(), code.trim().toLowerCase()];
+      for (const t of tries) {
+        if (await sha256(t) === PASS_HASH) {
+          try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
+          history.replaceState(null, '', location.pathname);
+          openApp();
+          return;
+        }
+      }
+    } catch {}
+  }
+  showGate();
 })();
 
 /* แป้นพิมพ์ไทย (เกษมณี) -> อังกฤษ — เผื่อลืมสลับภาษาแล้วพิมพ์รหัสไม่ออก */
@@ -317,20 +337,28 @@ function thaiToLatin(s){ return [...s].map(c => TH2EN[c] || c).join(''); }
 function hasThai(s){ return /[\u0E00-\u0E7F]/.test(s); }
 
 document.getElementById('gate-show')?.addEventListener('change', (e) => {
-  document.getElementById('gate-pass').type = e.target.checked ? 'text' : 'password';
+  document.getElementById('gate-pass').classList.toggle('masked', !e.target.checked);
 });
+
+// สำรองค่าที่ผู้ใช้พิมพ์/วางเอง เผื่อ input.value อ่านไม่ได้
+let typedCode = '';
+document.getElementById('gate-pass')?.addEventListener('input', (e) => { typedCode = e.target.value; });
+
+async function tryUnlock(raw){
+  const tries = [raw, raw.trim(), raw.trim().toLowerCase(),
+                 thaiToLatin(raw.trim()), thaiToLatin(raw.trim()).toLowerCase()];
+  for (const t of tries) { if (t && await sha256(t) === PASS_HASH) return true; }
+  return false;
+}
 
 document.getElementById('gate-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('gate-pass');
   gateMsg.className = 'gate-msg';
-  const raw = input.value;
-  // ยอมรับได้หลายแบบ: มีเว้นวรรคติดมา · พิมพ์ใหญ่ · ลืมสลับแป้นพิมพ์เป็นอังกฤษ
-  const tries = [raw, raw.trim(), raw.trim().toLowerCase(),
-                 thaiToLatin(raw.trim()), thaiToLatin(raw.trim()).toLowerCase()];
+  const raw = input.value || typedCode || '';
   let ok = false;
   try {
-    for (const t of tries) { if (await sha256(t) === PASS_HASH) { ok = true; break; } }
+    ok = await tryUnlock(raw);
   } catch {
     gateMsg.textContent = 'เบราว์เซอร์นี้ตรวจรหัสไม่ได้ (ต้องเปิดผ่าน https)';
     return;
