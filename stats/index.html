@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fcfcfb">
+<title>สถิติการใช้งาน — SCA App + Ceph Protractor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232a78d6'/%3E%3Crect x='3' y='8' width='2.5' height='5' fill='%23fff'/%3E%3Crect x='6.75' y='5' width='2.5' height='8' fill='%23fff'/%3E%3Crect x='10.5' y='3' width='2.5' height='10' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --surface-2:#ffffff; --line:#e6e5e0;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7b7a74;
+  --series-1:#2a78d6; --series-2:#eb6834;
+  --grid:#eceae5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --surface-1:#1a1a19; --surface-2:#232321; --line:#35342f;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#96958c;
+    --series-1:#3987e5; --series-2:#d95926;
+    --grid:#2c2c29;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--surface-1); color:var(--text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+              "Sarabun","Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:860px;margin:0 auto;padding:22px 16px 56px}
+
+/* ---------- ประตูรหัสผ่าน ---------- */
+.gate{min-height:88vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.gate-card{width:100%;max-width:360px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:14px;padding:24px 22px}
+.gate-card h1{font-size:19px;margin:0 0 4px;color:var(--series-1)}
+.gate-card p{margin:0 0 16px;color:var(--text-secondary);font-size:13px}
+input[type=password]{width:100%;padding:11px 12px;font-size:16px;border-radius:9px;
+  border:1px solid var(--line);background:var(--surface-1);color:var(--text-primary)}
+button.primary{width:100%;margin-top:10px;padding:11px 12px;font-size:15px;font-weight:600;
+  border:0;border-radius:9px;background:var(--series-1);color:#fff;cursor:pointer}
+button.ghost{padding:8px 13px;font-size:13px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--text-primary);cursor:pointer}
+.gate-msg{min-height:19px;margin-top:9px;font-size:13px;color:#d03b3b}
+
+/* ---------- หัวเรื่อง ---------- */
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;
+  margin-bottom:6px}
+h1.title{font-size:21px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--text-muted);font-size:12.5px;margin:0 0 20px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+
+/* ---------- การ์ดตัวเลข ---------- */
+section{margin:0 0 26px}
+h2.sec{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-muted);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:2px;flex:none}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+.tile{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.tile .n{font-size:27px;font-weight:650;line-height:1.15;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.tile .l{font-size:12.5px;color:var(--text-secondary);margin-top:2px}
+.tile.sm .n{font-size:21px}
+
+/* ---------- กราฟ ---------- */
+.chart-card{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+  padding:14px 14px 8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-secondary);
+  margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg{display:block}
+.tip{position:fixed;pointer-events:none;z-index:9;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px;
+  box-shadow:0 6px 20px rgba(0,0,0,.14);white-space:nowrap;opacity:0;transition:opacity .1s}
+.tip b{font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px}
+th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-muted);font-weight:600}
+td{font-variant-numeric:tabular-nums}
+.muted{color:var(--text-muted);font-size:12.5px}
+a{color:var(--series-1)}
+.hide{display:none}
+@media (max-width:480px){
+  .tile .n{font-size:24px}
+  h1.title{font-size:19px}
+}
+</style>
+</head>
+<body>
+
+<!-- ---------------- ประตูรหัสผ่าน ---------------- -->
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gate-form">
+    <h1>สถิติการใช้งาน</h1>
+    <p>SCA App + Ceph Protractor · ใส่รหัสผ่านเพื่อดู</p>
+    <input type="password" id="gate-pass" placeholder="รหัสผ่าน" autocomplete="current-password">
+    <button type="submit" class="primary">เข้าดูสถิติ</button>
+    <div class="gate-msg" id="gate-msg"></div>
+  </form>
+</div>
+
+<!-- ---------------- หน้าหลัก ---------------- -->
+<div class="wrap" id="shell" hidden>
+  <header>
+    <h1 class="title">สถิติการใช้งาน</h1>
+    <button class="ghost" id="reload">รีเฟรช</button>
+  </header>
+  <p class="sub" id="updated">กำลังโหลด…</p>
+
+  <div id="body" hidden>
+    <section>
+      <h2 class="sec"><i class="dot" style="background:var(--series-1)"></i>SCA App</h2>
+      <div class="tiles" id="t-sca"></div>
+    </section>
+
+    <section>
+      <h2 class="sec">เฉพาะ SCA App — การใช้งานจริง</h2>
+      <div class="tiles" id="t-sca2"></div>
+    </section>
+
+    <section>
+      <h2 class="sec"><i class="dot" style="background:var(--series-2)"></i>Ceph Protractor</h2>
+      <div class="tiles" id="t-ceph"></div>
+    </section>
+
+    <section>
+      <h2 class="sec">ผู้ใช้ต่อวัน — 30 วันล่าสุด (นับแท็บที่ไม่ซ้ำ)</h2>
+      <div class="chart-card">
+        <div class="legend">
+          <span><i class="dot" style="background:var(--series-1)"></i>SCA App</span>
+          <span><i class="dot" style="background:var(--series-2)"></i>Ceph Protractor</span>
+        </div>
+        <div class="scroller" id="chart"></div>
+        <p class="muted" style="margin:8px 2px 10px">
+          <button class="ghost" id="toggle-table">ดูเป็นตาราง</button>
+        </p>
+        <div id="table" class="hide"></div>
+      </div>
+    </section>
+
+    <p class="muted">
+      นับตามแท็บเบราว์เซอร์ ไม่ใช่ตามคน · ข้อมูลดิบทั้งหมดอยู่ใน
+      <a href="https://docs.google.com/spreadsheets/d/1GKwLuhr51Imcpodc3Y8KTO4JwPxwEPfNQnphol3df6A/edit" target="_blank" rel="noopener">Google Sheet</a>
+      · ไม่มีการเก็บข้อมูลคนไข้
+    </p>
+  </div>
+
+  <p class="muted" id="err" hidden></p>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+/* ---------------------------------------------------------------
+ * ประตูรหัสผ่าน — รหัสเดียวกับตัวแอป (เก็บเป็นค่า SHA-256)
+ * --------------------------------------------------------------- */
+const PASS_HASH = '1e2e8da43bdd5c60670d06326700b67ceeabd52b4741cb0209d6310dd9118ce9';
+const UNLOCK_KEY = 'sca.unlocked';
+const gate = document.getElementById('gate');
+const shell = document.getElementById('shell');
+const gateMsg = document.getElementById('gate-msg');
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function openApp(){ gate.hidden = true; shell.hidden = false; load(); }
+function showGate(){ gate.hidden = false; shell.hidden = true;
+  setTimeout(() => document.getElementById('gate-pass')?.focus(), 60); }
+
+function boot(){
+  let remembered = null;
+  try { remembered = localStorage.getItem(UNLOCK_KEY); } catch {}
+  if (remembered === PASS_HASH) openApp(); else showGate();
+}
+
+document.getElementById('gate-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('gate-pass');
+  let h;
+  try { h = await sha256(input.value); }
+  catch { gateMsg.textContent = 'เบราว์เซอร์นี้ตรวจรหัสไม่ได้ (ต้องเปิดผ่าน https)'; return; }
+  if (h === PASS_HASH) {
+    try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
+    gateMsg.textContent = ''; input.value = ''; openApp();
+  } else {
+    gateMsg.textContent = 'รหัสผ่านไม่ถูกต้อง';
+    input.select();
+  }
+});
+
+/* ---------------------------------------------------------------
+ * ดึงข้อมูล — JSONP (Apps Script ไม่ตอบ CORS สำหรับทุกเบราว์เซอร์)
+ * --------------------------------------------------------------- */
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwPgC4WvRnV26rlJhsGqKy_oUbDvSTBtIahNSBKAurciGx1Wl06d4NhqO0rc1P991QSDQ/exec';
+
+function fetchStats(){
+  return new Promise((resolve, reject) => {
+    const cb = 'scaStats' + Date.now().toString(36);
+    const s = document.createElement('script');
+    const timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 20000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error('network')); };
+    s.src = ENDPOINT + '?read=1&callback=' + cb + '&t=' + Date.now();
+    document.body.appendChild(s);
+  });
+}
+
+/* ---------------------------------------------------------------
+ * แสดงผล
+ * --------------------------------------------------------------- */
+function $(id){ return document.getElementById(id); }
+let DAILY = [];
+
+function tiles(el, items, small){
+  el.innerHTML = items.map(([n, l]) =>
+    `<div class="tile${small ? ' sm' : ''}"><div class="n">${n}</div><div class="l">${l}</div></div>`
+  ).join('');
+}
+
+async function load(){
+  $('updated').textContent = 'กำลังโหลด…';
+  $('err').hidden = true;
+  try {
+    const d = await fetchStats();
+    const a = d.apps.sca, c = d.apps.ceph;
+    tiles($('t-sca'), [
+      [a.users, 'ผู้ใช้ทั้งหมด (แท็บไม่ซ้ำ)'],
+      [a.opens, 'จำนวนครั้งที่เปิดเว็บ'],
+      [a.today, 'ใช้งานวันนี้'],
+      [a.d7, 'ใช้งาน 7 วันล่าสุด'],
+    ]);
+    tiles($('t-sca2'), [
+      [a.calc, 'คำนวณแผนสำเร็จ'],
+      [a.calc_users, 'คนที่เคยคำนวณจริง'],
+      [a.xlsx, 'อัปโหลดไฟล์ xlsx'],
+      [a.gate_ok, 'กรอกรหัสถูก'],
+      [a.gate_fail, 'กรอกรหัสผิด'],
+      [a.gate_users, 'คนที่ผ่านรหัสได้'],
+    ], true);
+    tiles($('t-ceph'), [
+      [c.users, 'ผู้ใช้ทั้งหมด (แท็บไม่ซ้ำ)'],
+      [c.opens, 'จำนวนครั้งที่เปิดเว็บ'],
+      [c.today, 'ใช้งานวันนี้'],
+      [c.d7, 'ใช้งาน 7 วันล่าสุด'],
+    ]);
+    DAILY = d.daily || [];
+    drawChart(DAILY);
+    drawTable(DAILY);
+    $('updated').textContent = 'อัปเดตล่าสุด ' + d.updated + ' น.';
+    $('body').hidden = false;
+  } catch (e) {
+    $('updated').textContent = '';
+    $('err').hidden = false;
+    $('err').textContent = 'โหลดข้อมูลไม่สำเร็จ — ลองกดรีเฟรชอีกครั้ง หรือเปิดชีตโดยตรง (' + e.message + ')';
+  }
+}
+
+function niceMax(v){
+  if (v <= 4) return 4;
+  const step = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 2.5, 5, 10]) {
+    const t = m * step;
+    if (t >= v) return Math.ceil(v / (t / 4)) * (t / 4);
+  }
+  return v;
+}
+function thDate(iso){
+  const [y, m, dd] = iso.split('-');
+  return parseInt(dd, 10) + '/' + parseInt(m, 10);
+}
+
+function drawChart(rows){
+  const host = $('chart');
+  if (!rows.length) {
+    host.innerHTML = '<p class="muted" style="margin:14px 2px 18px">ยังไม่มีข้อมูล — ตัวเลขจะขึ้นเมื่อมีคนเปิดเว็บ</p>';
+    return;
+  }
+  const PADL = 34, PADR = 10, PADT = 14, PADB = 30;
+  const BAND = Math.max(26, Math.min(48, Math.round(660 / rows.length)));
+  const W = PADL + PADR + BAND * rows.length;
+  const H = 240, plotH = H - PADT - PADB;
+  const maxV = niceMax(Math.max(1, ...rows.map(r => Math.max(r.sca, r.ceph))));
+  const y = v => PADT + plotH - (v / maxV) * plotH;
+
+  const barW = Math.max(5, Math.floor((BAND - 8) / 2) - 1);  // เว้น 2px ระหว่างแท่ง
+  const R = 4;
+  let g = '', bars = '', labels = '';
+
+  // เส้นกริดแนวนอน 4 ช่วง
+  for (let i = 0; i <= 4; i++) {
+    const v = maxV * i / 4, yy = y(v);
+    g += `<line x1="${PADL}" x2="${W - PADR}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<text x="${PADL - 7}" y="${yy + 4}" text-anchor="end" font-size="10.5" fill="var(--text-muted)">${Math.round(v)}</text>`;
+  }
+
+  // ปลายแท่งมนเฉพาะด้านบน ยึดกับเส้นฐาน
+  function bar(x, v, color, day, name){
+    const h = plotH - (y(v) - PADT);
+    if (h <= 0) return '';
+    const r = Math.min(R, h);
+    const yy = y(v);
+    const d = `M${x},${PADT + plotH} L${x},${yy + r} Q${x},${yy} ${x + r},${yy}
+               L${x + barW - r},${yy} Q${x + barW},${yy} ${x + barW},${yy + r}
+               L${x + barW},${PADT + plotH} Z`;
+    return `<path d="${d}" fill="${color}" data-day="${day}" data-name="${name}" data-v="${v}"/>`;
+  }
+
+  rows.forEach((r, i) => {
+    const x0 = PADL + i * BAND + (BAND - (barW * 2 + 2)) / 2;
+    bars += bar(x0, r.sca, 'var(--series-1)', r.date, 'SCA App');
+    bars += bar(x0 + barW + 2, r.ceph, 'var(--series-2)', r.date, 'Ceph Protractor');
+    const every = rows.length > 16 ? 3 : (rows.length > 8 ? 2 : 1);
+    if (i % every === 0 || i === rows.length - 1) {
+      labels += `<text x="${PADL + i * BAND + BAND / 2}" y="${H - 10}" text-anchor="middle"
+                  font-size="10.5" fill="var(--text-muted)">${thDate(r.date)}</text>`;
+    }
+  });
+
+  host.innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
+        aria-label="ผู้ใช้ต่อวัน 30 วันล่าสุด แยกตามแอป">
+      ${g}
+      <line x1="${PADL}" x2="${W - PADR}" y1="${PADT + plotH}" y2="${PADT + plotH}"
+            stroke="var(--line)" stroke-width="1"/>
+      ${bars}${labels}
+    </svg>`;
+
+  host.scrollLeft = host.scrollWidth;   // เปิดมาเห็นวันล่าสุดก่อน
+
+  const tip = $('tip');
+  host.querySelectorAll('path').forEach(p => {
+    p.style.cursor = 'default';
+    const show = e => {
+      tip.innerHTML = `${p.dataset.name} · ${p.dataset.day}<br><b>${p.dataset.v}</b> แท็บ`;
+      tip.style.opacity = '1';
+      const t = e.touches ? e.touches[0] : e;
+      tip.style.left = Math.min(window.innerWidth - 150, t.clientX + 12) + 'px';
+      tip.style.top = Math.max(8, t.clientY - 46) + 'px';
+    };
+    p.addEventListener('mouseenter', show);
+    p.addEventListener('mousemove', show);
+    p.addEventListener('touchstart', show, { passive: true });
+    p.addEventListener('mouseleave', () => tip.style.opacity = '0');
+  });
+  host.addEventListener('mouseleave', () => tip.style.opacity = '0');
+}
+
+function drawTable(rows){
+  if (!rows.length) { $('table').innerHTML = ''; return; }
+  $('table').innerHTML =
+    '<table><thead><tr><th>วันที่</th><th>SCA App</th><th>Ceph Protractor</th></tr></thead><tbody>' +
+    rows.slice().reverse().map(r =>
+      `<tr><td>${r.date}</td><td>${r.sca}</td><td>${r.ceph}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+$('toggle-table').addEventListener('click', () => {
+  const t = $('table'), hidden = t.classList.toggle('hide');
+  $('toggle-table').textContent = hidden ? 'ดูเป็นตาราง' : 'ซ่อนตาราง';
+});
+$('reload').addEventListener('click', load);
+
+boot();
+</script>
+</body>
+</html>
