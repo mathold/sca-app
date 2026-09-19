@@ -109,3 +109,9 @@ function setup() {
   sh.setColumnWidth(3, 140);
   sh.getRange(r, 1, 1000, 1).setNumberFormat('yyyy-mm-dd');
 }
+
+/** ล้างข้อมูลทดสอบทั้งหมด (เก็บหัวตารางไว้) */
+function clearLog() {
+  var sh = logSheet_();
+  if (sh.getLastRow() > 1) sh.deleteRows(2, sh.getLastRow() - 1);
+}
