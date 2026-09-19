@@ -8,7 +8,7 @@
  *
  * VERSION ด้านล่าง tools/bump.py แก้ให้อัตโนมัติ — ไม่ต้องแก้มือ
  */
-const VERSION = '27';
+const VERSION = '28';
 const CACHE = 'sca-v' + VERSION;
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
@@ -37,8 +37,11 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.search) return;
+  // cache:'no-cache' = ถามเซิร์ฟเวอร์ทุกครั้งว่าไฟล์เปลี่ยนไหม (ได้ 304 ถ้าเหมือนเดิม จึงยังเร็ว)
+  // ถ้าไม่ใส่ fetch() จะหยิบจากแคช HTTP ของเบราว์เซอร์ได้ — GitHub Pages ตั้ง max-age=600
+  // ทำให้ยังเห็นของเก่าได้ถึง 10 นาทีทั้งที่ตั้งใจให้เป็น network-first
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         // เก็บเฉพาะที่โหลดสำเร็จจริง ไม่งั้นหน้า error จะถูกแคชแทนของดี
         if (res && res.ok) {
