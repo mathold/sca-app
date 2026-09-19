@@ -138,6 +138,8 @@ header.app .stamp span:first-child{font-size:15px}
   border-radius:9px;background:var(--bg);color:var(--ink);width:100%}
 .gate-card input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
 .gate-card button{width:100%}
+.show-pass{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:-4px}
+.show-pass input{width:auto;margin:0}
 .gate-msg{font-size:13.5px;color:var(--ext);min-height:1.2em;font-weight:500}
 .gate-msg.info{color:var(--muted);font-weight:400;word-break:break-all;font-family:ui-monospace,monospace;font-size:12px}
 .gate-foot{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:11px;margin-top:3px}
@@ -167,7 +169,10 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
   <form class="gate-card" id="gate-form">
     <h2>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h2>
     <p>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
-    <input type="password" id="gate-pass" autocomplete="current-password" placeholder="รหัสผ่าน" aria-label="รหัสผ่าน">
+    <input type="password" id="gate-pass" autocomplete="current-password"
+           autocapitalize="none" autocorrect="off" spellcheck="false"
+           placeholder="รหัสผ่าน" aria-label="รหัสผ่าน">
+    <label class="show-pass"><input type="checkbox" id="gate-show"> แสดงรหัสที่พิมพ์</label>
     <button type="submit" class="primary">เข้าใช้งาน</button>
     <div class="gate-msg" id="gate-msg" role="status"></div>
     <div class="stamp" style="text-align:center;align-items:center;margin-top:2px"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
@@ -302,19 +307,44 @@ function showGate(){ gate.hidden = false; shell.hidden = true;
   if (remembered === PASS_HASH) openApp(); else showGate();
 })();
 
+/* แป้นพิมพ์ไทย (เกษมณี) -> อังกฤษ — เผื่อลืมสลับภาษาแล้วพิมพ์รหัสไม่ออก */
+const TH2EN = {
+  'ๆ':'q','ไ':'w','ำ':'e','พ':'r','ะ':'t','ั':'y','ี':'u','ร':'i','น':'o','ย':'p','บ':'[','ล':']',
+  'ฟ':'a','ห':'s','ก':'d','ด':'f','เ':'g','้':'h','่':'j','า':'k','ส':'l','ว':';','ง':"'",
+  'ผ':'z','ป':'x','แ':'c','อ':'v','ิ':'b','ื':'n','ท':'m','ม':',','ใ':'.','ฝ':'/'
+};
+function thaiToLatin(s){ return [...s].map(c => TH2EN[c] || c).join(''); }
+function hasThai(s){ return /[\u0E00-\u0E7F]/.test(s); }
+
+document.getElementById('gate-show')?.addEventListener('change', (e) => {
+  document.getElementById('gate-pass').type = e.target.checked ? 'text' : 'password';
+});
+
 document.getElementById('gate-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('gate-pass');
   gateMsg.className = 'gate-msg';
-  let h;
-  try { h = await sha256(input.value); }
-  catch { gateMsg.textContent = 'เบราว์เซอร์นี้ตรวจรหัสไม่ได้ (ต้องเปิดผ่าน https)'; return; }
-  if (h === PASS_HASH) {
+  const raw = input.value;
+  // ยอมรับได้หลายแบบ: มีเว้นวรรคติดมา · พิมพ์ใหญ่ · ลืมสลับแป้นพิมพ์เป็นอังกฤษ
+  const tries = [raw, raw.trim(), raw.trim().toLowerCase(),
+                 thaiToLatin(raw.trim()), thaiToLatin(raw.trim()).toLowerCase()];
+  let ok = false;
+  try {
+    for (const t of tries) { if (await sha256(t) === PASS_HASH) { ok = true; break; } }
+  } catch {
+    gateMsg.textContent = 'เบราว์เซอร์นี้ตรวจรหัสไม่ได้ (ต้องเปิดผ่าน https)';
+    return;
+  }
+  if (ok) {
     try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
     gateMsg.textContent = ''; input.value = ''; openApp();
     if (window.scaTrack) scaTrack('gate', 'ok');
   } else {
-    gateMsg.textContent = 'รหัสผ่านไม่ถูกต้อง';
+    gateMsg.textContent = raw.trim() === ''
+      ? 'ยังไม่ได้พิมพ์รหัสผ่าน'
+      : (hasThai(raw)
+          ? 'แป้นพิมพ์อยู่ภาษาไทย — สลับเป็นอังกฤษแล้วพิมพ์ใหม่'
+          : 'รหัสผ่านไม่ถูกต้อง — ติ๊ก "แสดงรหัสที่พิมพ์" เพื่อตรวจดู');
     if (window.scaTrack) scaTrack('gate', 'fail');
     input.select();
   }
