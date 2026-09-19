@@ -214,6 +214,48 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 
 <script>
 /* ---------------------------------------------------------------
+ * ตัวนับการใช้งาน — ส่งเฉพาะ "ชนิดเหตุการณ์" กับ "รหัสแท็บสุ่ม" เท่านั้น
+ * ไม่มีข้อมูลคนไข้ · ไม่มีค่าที่กรอก · ไม่มีชื่อไฟล์ ออกจากเครื่องนี้
+ * ปลายทาง: Google Sheet "สถิติการใช้งาน — SCA App + Ceph Protractor"
+ * --------------------------------------------------------------- */
+(function () {
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbwPgC4WvRnV26rlJhsGqKy_oUbDvSTBtIahNSBKAurciGx1Wl06d4NhqO0rc1P991QSDQ/exec';
+  var APP = 'sca';
+  function tab() {
+    try {
+      var s = sessionStorage.getItem('sca.tab');
+      if (!s) {
+        s = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()) + String(Date.now()))
+              .replace(/[^a-z0-9]/gi, '').slice(0, 12);
+        sessionStorage.setItem('sca.tab', s);
+      }
+      return s;
+    } catch (e) { return 'nostore'; }
+  }
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function stamp() {
+    var d = new Date();
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' +
+           p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+  }
+  window.scaTrack = function (event, detail) {
+    try {
+      var body = new URLSearchParams({
+        app: APP, event: event || 'open', detail: detail || '', session: tab(), t: stamp()
+      }).toString();
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/x-www-form-urlencoded;charset=UTF-8' }));
+      } else {
+        fetch(ENDPOINT, { method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: body });
+      }
+    } catch (e) {}
+  };
+  window.scaTrack('open');
+})();
+</script>
+<script>
+/* ---------------------------------------------------------------
  * ประตูรหัสผ่าน
  *
  * เก็บเป็นค่า SHA-256 ไม่ใช่รหัสตัวจริง เปิดดูโค้ดหน้าเว็บก็ไม่เห็นรหัส
@@ -270,8 +312,10 @@ document.getElementById('gate-form').addEventListener('submit', async (e) => {
   if (h === PASS_HASH) {
     try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
     gateMsg.textContent = ''; input.value = ''; openApp();
+    if (window.scaTrack) scaTrack('gate', 'ok');
   } else {
     gateMsg.textContent = 'รหัสผ่านไม่ถูกต้อง';
+    if (window.scaTrack) scaTrack('gate', 'fail');
     input.select();
   }
 });
@@ -469,6 +513,7 @@ async function handleFile(file) {
     fillForm(input);
     readWarnings = warnings;
     msg.textContent = `อ่าน "${file.name}" (ชีต ${sheet}) เรียบร้อย — ตรวจค่าก่อนคำนวณได้เลย`;
+    if (window.scaTrack) scaTrack('xlsx');
     if (warnings.length) {
       warnBox.innerHTML = `<div class="alert"><b>ตรวจก่อนคำนวณ</b><ul>${warnings.map(w => `<li>${w.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('')}</ul></div>`;
     }
@@ -504,6 +549,7 @@ document.getElementById('calc').addEventListener('click', () => {
     document.getElementById('view-input').hidden = true;
     document.getElementById('view-report').hidden = false;
     window.scrollTo(0, 0);
+    if (window.scaTrack) scaTrack('calc');
     try { localStorage.setItem('sca.last', JSON.stringify(inp)); } catch {}
   } catch (err) {
     alert('คำนวณไม่สำเร็จ: ' + err.message);
