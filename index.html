@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SCA Analysis & Treatment Plan By " หมอผิ่น "</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SCA">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --ink:#111827; --muted:#6b7280; --line:#e2e5ea;
+  --accent:#1d4ed8; --ext:#b91c1c; --ipr:#b45309; --non:#15803d;
+  --stamp-front:#1d4ed8; --stamp-back:#bfd3ff;
+  --warn-bg:#fff7ed; --warn-line:#fdba74; --alert-bg:#fef2f2; --alert-line:#fca5a5;
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --card:#171a21; --ink:#e7e9ee; --muted:#9aa2b1; --line:#262b35;
+    --accent:#7aa2ff; --ext:#f87171; --ipr:#fbbf24; --non:#4ade80;
+    --stamp-front:#8fb4ff; --stamp-back:#12224a;
+    --warn-bg:#2a2011; --warn-line:#7c5410; --alert-bg:#2a1414; --alert-line:#7f1d1d;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.6;
+  font-family:"IBM Plex Sans Thai","Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:16px 16px 64px}
+header.app{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:8px 0 16px}
+header.app h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance;flex:1 1 320px;min-width:0;
+  color:var(--stamp-front);text-shadow:2.5px 2.5px 0 var(--stamp-back);line-height:1.22}
+header.app .tag{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.drop{
+  border:2px dashed var(--line); border-radius:var(--radius); padding:28px 16px; text-align:center;
+  background:var(--card); cursor:pointer; transition:border-color .15s,background .15s;
+}
+.drop.hot{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+.drop h2{margin:0 0 6px;font-size:17px}
+.drop p{margin:0;color:var(--muted);font-size:14px}
+.drop input{display:none}
+h2.sec{font-size:15px;text-transform:none;letter-spacing:.02em;color:var(--muted);margin:22px 0 10px;font-weight:600}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.f{display:flex;flex-direction:column;gap:3px}
+.f{justify-content:flex-end}
+.f label{font-size:12px;color:var(--muted);min-height:2.4em;display:flex;align-items:flex-end}
+.f input,.f select{
+  font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+  background:var(--bg);color:var(--ink);width:100%;
+}
+.f input:focus,.f select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.f.filled input{background:var(--card)}
+.quad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:0;padding:12px 0;background:linear-gradient(transparent,var(--bg) 24%)}
+button{font:inherit;font-weight:600;border-radius:11px;border:1px solid transparent;padding:12px 20px;cursor:pointer}
+button.primary{background:var(--accent);color:#fff}
+button.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.msg{font-size:14px;color:var(--muted);padding:6px 0}
+.alert{background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:11px;padding:11px 13px;margin:10px 0;font-size:14.5px}
+.alert.red{border-color:var(--ext)}
+.alert ul{margin:6px 0 0;padding-left:20px}
+
+/* ---------- รายงาน ---------- */
+.report{font-size:15px}
+.rep-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;
+  border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:16px}
+.rep-head h1{font-size:22px;margin:0}
+.rep-head .dn{font-size:14px;color:var(--muted);font-weight:500}
+.rep-head .sub{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+.verdict{text-align:right;font-size:14px}
+.v-line{display:flex;gap:10px;justify-content:flex-end}
+.v-line span{color:var(--muted)}
+.v-ext{margin-top:4px;font-weight:600}
+.plan-ext{color:var(--ext)} .plan-ipr{color:var(--ipr)} .plan-non{color:var(--non)}
+.badge{font-size:13px;padding:2px 9px;border:1px solid currentColor;border-radius:999px;vertical-align:middle}
+.report section{margin:22px 0}
+.report h2{font-size:17px;margin:0 0 10px;padding-left:10px;border-left:4px solid var(--accent)}
+.report h3{font-size:15.5px;margin:18px 0 8px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+table.kv{width:100%;border-collapse:collapse;font-size:14px}
+table.kv th{text-align:left;font-weight:500;color:var(--muted);padding:5px 10px 5px 0;width:48%;vertical-align:top}
+table.kv td{padding:5px 0;vertical-align:top}
+table.grid{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+table.grid caption{text-align:left;color:var(--muted);font-size:13px;padding-bottom:5px}
+table.grid th,table.grid td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+table.grid th{background:color-mix(in srgb,var(--ink) 5%,var(--card));font-weight:600}
+table.grid td.num,table.grid th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.grid tr.rec td{background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
+.box{border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:12px;font-size:14px;background:var(--bg)}
+.steps{padding-left:20px;margin:0}
+.steps li{margin-bottom:10px}
+.note{font-size:13.5px;color:var(--muted);margin:7px 0}
+.reason{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
+.warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:9px;padding:8px 11px;font-size:13.5px;margin:8px 0}
+.ok{color:var(--non);font-weight:600}
+.hot{color:var(--ext);font-weight:600}
+ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
+.arch{border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:14px;background:var(--bg)}
+.disclaimer{border-top:1px solid var(--line);margin-top:26px;padding-top:12px;font-size:12.5px;color:var(--muted)}
+
+
+
+/* ---------- ตราลิขสิทธิ์ (ตัวหนังสือสองชั้น) + เวอร์ชัน ---------- */
+.stamp{font-weight:700;font-size:23px;line-height:1.08;color:var(--stamp-front);
+  text-align:right;letter-spacing:.01em;white-space:nowrap;
+  text-shadow:2.5px 2.5px 0 var(--stamp-back);display:flex;flex-direction:column;gap:2px}
+.stamp span:first-child{font-size:17px;letter-spacing:.1em;opacity:.95}
+.ver{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);margin-top:7px}
+header.app .stamp{font-size:20px;text-shadow:2px 2px 0 var(--stamp-back);margin-left:auto}
+header.app .stamp span:first-child{font-size:15px}
+.foot-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.foot-row>div:first-child{flex:1 1 320px;min-width:0}
+@media (max-width:600px){header.app .stamp{margin-left:0}.stamp{text-align:left}}
+
+
+/* ---------- ประตูรหัสผ่าน ---------- */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 16px}
+.gate-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:30px 26px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:11px}
+.gate-card h2{font-size:20px;margin:0;letter-spacing:-.01em;line-height:1.25;text-wrap:balance;
+  color:var(--stamp-front);text-shadow:2.5px 2.5px 0 var(--stamp-back)}
+.gate-card p{margin:0;color:var(--muted);font-size:14px}
+.gate-card input{font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:9px;background:var(--bg);color:var(--ink);width:100%}
+.gate-card input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.gate-card button{width:100%}
+.gate-msg{font-size:13.5px;color:var(--ext);min-height:1.2em;font-weight:500}
+.gate-msg.info{color:var(--muted);font-weight:400;word-break:break-all;font-family:ui-monospace,monospace;font-size:12px}
+.gate-foot{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:11px;margin-top:3px}
+button.lock{margin-left:auto;background:none;color:var(--muted);border:1px solid var(--line);
+  font-weight:500;font-size:13px;padding:4px 13px;border-radius:999px}
+button.lock:hover{color:var(--ink);border-color:var(--muted)}
+
+@media print{
+  body{background:#fff;color:#000;font-size:11pt}
+  .wrap{max-width:none;padding:0}
+  .noprint{display:none !important}
+  .card{border:none;padding:0;margin:0}
+  .stamp{text-shadow:1.5px 1.5px 0 rgba(0,0,0,.28)}
+  .report section{break-inside:avoid}
+  .arch,table.grid,.steps li{break-inside:avoid}
+  @page{size:A4;margin:14mm}
+}
+@media (max-width:560px){
+  .fields{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .verdict{text-align:left}
+  .v-line{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gate-form">
+    <h2>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h2>
+    <p>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
+    <input type="password" id="gate-pass" autocomplete="current-password" placeholder="รหัสผ่าน" aria-label="รหัสผ่าน">
+    <button type="submit" class="primary">เข้าใช้งาน</button>
+    <div class="gate-msg" id="gate-msg" role="status"></div>
+    <div class="stamp" style="text-align:center;align-items:center;margin-top:2px"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
+    <div class="gate-foot">รหัสนี้กันคนที่ไม่ได้รับเชิญเท่านั้น ไม่ใช่ระบบความปลอดภัยระดับสูง<br>ข้อมูลคนไข้ที่กรอกไม่ถูกส่งออกจากเครื่องนี้ไม่ว่ากรณีใด</div>
+  </form>
+</div>
+
+<div class="wrap" id="shell" hidden>
+
+<header class="app noprint">
+  <h1>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h1>
+  <span class="tag">อัปโหลดตาราง SCA หรือกรอกเอง · คำนวณในเครื่อง ข้อมูลไม่ถูกส่งออก</span>
+  <button type="button" class="lock" id="lock">ล็อก</button>
+  <div class="stamp" aria-label="ลิขสิทธิ์ โดย หมอผิ่น"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
+</header>
+<div class="ver" id="ver" style="margin:-10px 0 14px"></div>
+
+<div id="view-input" class="noprint">
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".xlsx,.xlsm">
+    <h2>วางไฟล์ SCA Table (.xlsx) ที่นี่</h2>
+    <p>หรือแตะเพื่อเลือกไฟล์ · จะอ่านค่าเข้าฟอร์มให้อัตโนมัติ</p>
+  </label>
+  <div id="load-msg" class="msg"></div>
+  <div id="read-warn"></div>
+
+  <form id="form" class="card"></form>
+
+  <div class="actions">
+    <button type="button" class="primary" id="calc">คำนวณแผนการรักษา</button>
+    <button type="button" class="ghost" id="clear">ล้างค่า</button>
+  </div>
+</div>
+
+<div id="view-report" hidden>
+  <div class="actions noprint">
+    <button type="button" class="ghost" id="back">← กลับไปแก้ค่า</button>
+    <button type="button" class="primary" id="print">บันทึกเป็น PDF / พิมพ์</button>
+  </div>
+  <div class="card" id="report"></div>
+</div>
+
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+ * ประตูรหัสผ่าน
+ *
+ * เก็บเป็นค่า SHA-256 ไม่ใช่รหัสตัวจริง เปิดดูโค้ดหน้าเว็บก็ไม่เห็นรหัส
+ * แต่ขอย้ำตามตรง: นี่ไม่ใช่ความปลอดภัยจริง เพราะการคำนวณทั้งหมดเกิดในเบราว์เซอร์
+ * คนที่ตั้งใจจะเข้าและรู้วิธี ยังเดารหัสจากค่านี้ได้ถ้ารหัสสั้นหรือเดาง่าย
+ * ใช้เพื่อกันคนที่บังเอิญเจอลิงก์เท่านั้น
+ *
+ * วิธีเปลี่ยนรหัส (ไม่ต้องใช้เครื่องมืออะไร):
+ *   1. เปิดหน้านี้แล้วต่อท้าย URL ด้วย  #hash=รหัสใหม่ที่ต้องการ
+ *   2. หน้าจะแสดงค่า SHA-256 ออกมา กดคัดลอก
+ *   3. เอาไปวางแทนค่า PASS_HASH ข้างล่าง แล้วอัปโหลดใหม่
+ *
+ * ต้องเปิดผ่าน https หรือ localhost เท่านั้น (crypto.subtle ไม่ทำงานบน file://)
+ * รหัสปัจจุบัน: morpin
+ * --------------------------------------------------------------- */
+const PASS_HASH = '1e2e8da43bdd5c60670d06326700b67ceeabd52b4741cb0209d6310dd9118ce9';
+const UNLOCK_KEY = 'sca.unlocked';
+
+const gate = document.getElementById('gate');
+const shell = document.getElementById('shell');
+const gateMsg = document.getElementById('gate-msg');
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function openApp(){ gate.hidden = true; shell.hidden = false; }
+function showGate(){ gate.hidden = false; shell.hidden = true;
+  setTimeout(() => document.getElementById('gate-pass')?.focus(), 60); }
+
+(async function boot(){
+  const m = location.hash.match(/^#hash=(.+)$/);
+  if (m) {
+    showGate();
+    try {
+      const h = await sha256(decodeURIComponent(m[1]));
+      gateMsg.className = 'gate-msg info';
+      gateMsg.textContent = h;
+    } catch { gateMsg.textContent = 'ต้องเปิดผ่าน https จึงจะสร้างค่ารหัสได้'; }
+    return;
+  }
+  let remembered = null;
+  try { remembered = localStorage.getItem(UNLOCK_KEY); } catch {}
+  if (remembered === PASS_HASH) openApp(); else showGate();
+})();
+
+document.getElementById('gate-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('gate-pass');
+  gateMsg.className = 'gate-msg';
+  let h;
+  try { h = await sha256(input.value); }
+  catch { gateMsg.textContent = 'เบราว์เซอร์นี้ตรวจรหัสไม่ได้ (ต้องเปิดผ่าน https)'; return; }
+  if (h === PASS_HASH) {
+    try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
+    gateMsg.textContent = ''; input.value = ''; openApp();
+  } else {
+    gateMsg.textContent = 'รหัสผ่านไม่ถูกต้อง';
+    input.select();
+  }
+});
+
+// ล็อกกลับ — สำหรับ iPad ที่ใช้ร่วมกันหลายคน (ล้างค่าที่กรอกค้างไว้ด้วย)
+document.getElementById('lock').addEventListener('click', () => {
+  try { localStorage.removeItem(UNLOCK_KEY); localStorage.removeItem('sca.last'); } catch {}
+  location.reload();
+});
+</script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script type="module">
+import { makeCase } from './src/ortho_calc.js';
+import { analyzeCase } from './src/analyze.js';
+import { readScaWorkbook, suggestGrowthPattern } from './src/sca_xlsx.js';
+import { renderReport, APP_VERSION, APP_UPDATED } from './src/report.js';
+document.getElementById('ver').textContent = `เวอร์ชัน ${APP_VERSION} · แก้ล่าสุด ${APP_UPDATED}`;
+
+/* ---------- นิยามฟอร์ม ---------- */
+const GROUPS = [
+  ['คนไข้', [
+    ['patient_name', 'ชื่อ-สกุล', 'text'], ['dn', 'DN', 'text'],
+    ['age', 'อายุ', 'text'], ['date', 'วันที่', 'text'],
+  ]],
+  ['โครงกระดูก (Steiner / Downs)', [
+    ['sna', 'SNA'], ['snb', 'SNB'], ['anb', 'ANB'], ['sn_gogn', 'SN-GoGn'],
+    ['wits', 'Wits (mm)'], ['fh_to_fop', 'FH to FOP'], ['y_axis', 'Y-Axis'], ['sn_to_ppl', 'SN to PPl'],
+  ]],
+  ['McNamara', [
+    ['fma', 'FMA (FH-MP Go-Me)'], ['co_a', 'Co-A (mm)'], ['co_gn', 'Co-Gn (mm)'],
+    ['ans_me', 'ANS-Me (mm)'], ['a_to_n', 'A to N (mm)'], ['pg_to_n', 'Pg to N (mm)'],
+    ['l1_apog_current', 'L1-APog (I/L to Apg, mm)'],
+  ]],
+  ['ฟันหน้า', [
+    ['facc_to_fh', 'FACC to FH (°)'], ['l1_to_mpl_box', 'IMPA — ค่าในช่อง (ส่วนต่างจาก 90°)'],
+    ['interincisal_current', '1/1 (°)'], ['u1_to_na', 'U1 to NA (°)'],
+    ['u1_sn', 'U1 to SN (°)'], ['u1_pp', 'U1 to PP (°)'],
+    ['overjet_current', 'Overjet (mm)'], ['overbite_current', 'Overbite (mm)'],
+    ['eline_upper_lip', 'E-line บน (mm)'], ['eline_lower_lip', 'E-line ล่าง (mm)'],
+  ]],
+];
+
+const QUADS = [
+  ['space_discrepancy', 'Space Discrepancy (+ ห่าง / − เก)', ['Q1 บนขวา', 'Q2 บนซ้าย', 'Q3 ล่างซ้าย', 'Q4 ล่างขวา']],
+  ['midline', 'Midline (mm)', ['Q1', 'Q2', 'Q3', 'Q4']],
+  ['arch_expansion', 'Arch Expansion (mm)', ['Q1', 'Q2', 'Q3', 'Q4']],
+];
+
+const RELS = [
+  ['canine_relationship', 'Canine relationship'],
+  ['molar_relationship', 'Molar relationship'],
+];
+
+const SELECTS = [
+  ['growth_pattern', 'Growth pattern', [['low_angle', 'Low angle (horizontal)'], ['average', 'Average'], ['high_angle', 'High angle (vertical)']]],
+  ['treatment_mode', 'โหมดวิเคราะห์', [['auto', 'อัตโนมัติ'], ['class_i_ii', 'บังคับ Class I/II (decompensation)'], ['class_iii', 'Class III camouflage'], ['class_iii_facc', 'Class III + FACC (แผน C)'], ['class_ii_forsus', 'Class II Forsus (ไม่ถอน)']]],
+  ['upper_torque_type', 'ชนิด torque ฟันบน', [['crown', 'Crown torque'], ['root', 'Buccal root torque']]],
+  ['molar_target', 'เป้า molar', [['follow', 'ปล่อยตามผลลัพธ์'], ['class_i', 'บังคับ Class I']]],
+];
+
+const el = (t, a = {}, kids = []) => {
+  const n = document.createElement(t);
+  for (const [k, v] of Object.entries(a)) {
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v);
+  }
+  kids.forEach(c => n.appendChild(c));
+  return n;
+};
+
+function field(name, label, type = 'number') {
+  const w = el('div', { class: 'f' });
+  w.appendChild(el('label', { for: name, text: label }));
+  const i = el('input', { id: name, name, type: type === 'text' ? 'text' : 'number', step: 'any',
+                          inputmode: type === 'text' ? 'text' : 'decimal', autocomplete: 'off' });
+  w.appendChild(i);
+  return w;
+}
+
+function buildForm() {
+  const f = document.getElementById('form');
+  f.innerHTML = '';
+  for (const [title, items] of GROUPS) {
+    f.appendChild(el('h2', { class: 'sec', text: title }));
+    const g = el('div', { class: 'fields' });
+    items.forEach(([n, l, t]) => g.appendChild(field(n, l, t)));
+    f.appendChild(g);
+  }
+  f.appendChild(el('h2', { class: 'sec', text: 'Curve of Spee (ล่าง)' }));
+  const cos = el('div', { class: 'fields' });
+  cos.appendChild(field('cos_q3', 'COS Q3 (mm)'));
+  cos.appendChild(field('cos_q4', 'COS Q4 (mm)'));
+  f.appendChild(cos);
+
+  for (const [key, title, labels] of QUADS) {
+    f.appendChild(el('h2', { class: 'sec', text: title }));
+    const g = el('div', { class: 'quad' });
+    ['q1', 'q2', 'q3', 'q4'].forEach((q, i) => g.appendChild(field(`${key}.${q}`, labels[i])));
+    f.appendChild(g);
+  }
+
+  for (const [key, title] of RELS) {
+    f.appendChild(el('h2', { class: 'sec', text: title + ' (รหัส 1/2/3 และระยะ mm)' }));
+    const g = el('div', { class: 'quad' });
+    g.appendChild(field(`${key}.rt_class`, 'ขวา — Class'));
+    g.appendChild(field(`${key}.rt_mm`, 'ขวา — mm'));
+    g.appendChild(field(`${key}.lt_class`, 'ซ้าย — Class'));
+    g.appendChild(field(`${key}.lt_mm`, 'ซ้าย — mm'));
+    f.appendChild(g);
+  }
+
+  f.appendChild(el('h2', { class: 'sec', text: 'ตัวเลือกการรักษา' }));
+  const g = el('div', { class: 'fields' });
+  for (const [name, label, opts] of SELECTS) {
+    const w = el('div', { class: 'f' });
+    w.appendChild(el('label', { for: name, text: label }));
+    const s = el('select', { id: name, name });
+    opts.forEach(([v, t]) => s.appendChild(el('option', { value: v, text: t })));
+    w.appendChild(s);
+    g.appendChild(w);
+  }
+  const mw = el('div', { class: 'f' });
+  mw.appendChild(el('label', { for: 'missing_teeth', text: 'ฟันที่หายไปแล้ว (FDI คั่นด้วย , )' }));
+  mw.appendChild(el('input', { id: 'missing_teeth', name: 'missing_teeth', type: 'text', placeholder: 'เช่น 24, 34', autocomplete: 'off' }));
+  g.appendChild(mw);
+  f.appendChild(g);
+}
+
+function setVal(name, v) {
+  const i = document.getElementById(name);
+  if (!i) return;
+  i.value = (v === null || v === undefined) ? '' : v;
+  if (i.parentElement) i.parentElement.classList.toggle('filled', i.value !== '');
+}
+
+function fillForm(inp) {
+  for (const [, items] of GROUPS) items.forEach(([n]) => setVal(n, inp[n]));
+  setVal('cos_q3', inp.cos_q3); setVal('cos_q4', inp.cos_q4);
+  for (const [key] of QUADS) ['q1', 'q2', 'q3', 'q4'].forEach(q => setVal(`${key}.${q}`, (inp[key] || {})[q]));
+  for (const [key] of RELS) ['rt_class', 'rt_mm', 'lt_class', 'lt_mm'].forEach(k => setVal(`${key}.${k}`, (inp[key] || {})[k]));
+  for (const [name] of SELECTS) { const s = document.getElementById(name); if (s && inp[name]) s.value = inp[name]; }
+  setVal('missing_teeth', (inp.missing_teeth || []).join(', '));
+}
+
+const numOrNull = (name) => {
+  const i = document.getElementById(name);
+  if (!i || i.value.trim() === '') return null;
+  const v = parseFloat(i.value);
+  return Number.isNaN(v) ? null : v;
+};
+const strVal = (name) => (document.getElementById(name)?.value ?? '').trim();
+
+function collectForm() {
+  const inp = {
+    patient_name: strVal('patient_name'), dn: strVal('dn'),
+    age: strVal('age') || null, date: strVal('date'),
+  };
+  for (const [, items] of GROUPS) items.forEach(([n, , t]) => { if (t !== 'text') inp[n] = numOrNull(n); });
+  inp.cos_q3 = numOrNull('cos_q3'); inp.cos_q4 = numOrNull('cos_q4'); inp.cos_mm = 0.0;
+  for (const [key] of QUADS) {
+    inp[key] = {}; ['q1', 'q2', 'q3', 'q4'].forEach(q => { inp[key][q] = numOrNull(`${key}.${q}`); });
+  }
+  for (const [key] of RELS) {
+    inp[key] = {};
+    ['rt_class', 'lt_class'].forEach(k => { const v = numOrNull(`${key}.${k}`); inp[key][k] = (v === null) ? null : Math.round(v); });
+    ['rt_mm', 'lt_mm'].forEach(k => { inp[key][k] = numOrNull(`${key}.${k}`); });
+  }
+  const sd = inp.space_discrepancy;
+  const sum = (a, b) => { const v = [a, b].filter(x => x !== null); return v.length ? v.reduce((x, y) => x + y, 0) : 0.0; };
+  inp.tooth_size_discrepancy_upper = sum(sd.q1, sd.q2);
+  inp.tooth_size_discrepancy_lower = sum(sd.q3, sd.q4);
+  for (const [name] of SELECTS) inp[name] = strVal(name);
+  inp.missing_teeth = strVal('missing_teeth').split(',').map(s => s.trim()).filter(Boolean);
+  inp.facc_to_fh = inp.facc_to_fh ?? 0.0;
+  inp.l1_to_mpl_box = inp.l1_to_mpl_box ?? 0.0;
+  inp.l1_apog_current = inp.l1_apog_current ?? 0.0;
+  inp.overjet_current = inp.overjet_current ?? 0.0;
+  inp.overbite_current = inp.overbite_current ?? 0.0;
+  inp.premolars_extracted_upper = 0; inp.premolars_extracted_lower = 0;
+  inp.arch_width_data_available = false;
+  return inp;
+}
+
+/* ---------- อ่านไฟล์ ---------- */
+let readWarnings = [];
+
+async function handleFile(file) {
+  const msg = document.getElementById('load-msg');
+  const warnBox = document.getElementById('read-warn');
+  warnBox.innerHTML = ''; readWarnings = [];
+  msg.textContent = 'กำลังอ่านไฟล์…';
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const { input, warnings, sheet } = readScaWorkbook(wb);
+    fillForm(input);
+    readWarnings = warnings;
+    msg.textContent = `อ่าน "${file.name}" (ชีต ${sheet}) เรียบร้อย — ตรวจค่าก่อนคำนวณได้เลย`;
+    if (warnings.length) {
+      warnBox.innerHTML = `<div class="alert"><b>ตรวจก่อนคำนวณ</b><ul>${warnings.map(w => `<li>${w.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('')}</ul></div>`;
+    }
+  } catch (err) {
+    msg.textContent = 'อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจไม่ใช่ตาราง SCA หรือยังไม่ได้ดาวน์โหลดจากคลาวด์';
+    console.error(err);
+  }
+}
+
+/* ---------- ผูกเหตุการณ์ ---------- */
+buildForm();
+
+const drop = document.getElementById('drop');
+document.getElementById('file').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hot'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+
+document.getElementById('form').addEventListener('input', e => {
+  if (e.target.parentElement) e.target.parentElement.classList.toggle('filled', e.target.value !== '');
+  if (e.target.id === 'fma' || e.target.id === 'sn_gogn') {
+    const g = document.getElementById('growth_pattern');
+    if (g && !g.dataset.touched) g.value = suggestGrowthPattern(numOrNull('fma'), numOrNull('sn_gogn'));
+  }
+});
+document.getElementById('growth_pattern')?.addEventListener('change', e => { e.target.dataset.touched = '1'; });
+
+document.getElementById('calc').addEventListener('click', () => {
+  try {
+    const inp = collectForm();
+    const r = analyzeCase(makeCase(inp));
+    document.getElementById('report').innerHTML = renderReport(r, readWarnings);
+    document.getElementById('view-input').hidden = true;
+    document.getElementById('view-report').hidden = false;
+    window.scrollTo(0, 0);
+    try { localStorage.setItem('sca.last', JSON.stringify(inp)); } catch {}
+  } catch (err) {
+    alert('คำนวณไม่สำเร็จ: ' + err.message);
+    console.error(err);
+  }
+});
+
+document.getElementById('back').addEventListener('click', () => {
+  document.getElementById('view-report').hidden = true;
+  document.getElementById('view-input').hidden = false;
+  window.scrollTo(0, 0);
+});
+document.getElementById('print').addEventListener('click', () => window.print());
+document.getElementById('clear').addEventListener('click', () => {
+  if (!confirm('ล้างค่าทั้งหมด?')) return;
+  buildForm();
+  document.getElementById('load-msg').textContent = '';
+  document.getElementById('read-warn').innerHTML = '';
+  readWarnings = [];
+  try { localStorage.removeItem('sca.last'); } catch {}
+});
+
+// คืนค่าที่กรอกค้างไว้ (เก็บในเครื่องผู้ใช้เท่านั้น)
+try {
+  const last = localStorage.getItem('sca.last');
+  if (last) { fillForm(JSON.parse(last)); document.getElementById('load-msg').textContent = 'คืนค่าที่กรอกค้างไว้ครั้งก่อนแล้ว'; }
+} catch {}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
