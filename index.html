@@ -37,12 +37,16 @@ body{
   -webkit-text-size-adjust:100%;
 }
 .wrap{max-width:1040px;margin:0 auto;padding:16px 16px 64px}
-header.app{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:8px 0 16px}
-header.app h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance;flex:1 1 320px;min-width:0;
+header.app{display:flex;align-items:flex-start;justify-content:space-between;gap:20px 24px;
+  flex-wrap:wrap;padding:14px 0 16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+header.app .head-main{flex:1 1 380px;min-width:0}
+header.app h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance;
   color:var(--stamp-front);text-shadow:2.5px 2.5px 0 var(--stamp-back);line-height:1.22}
-header.app .tag{font-size:13px;color:var(--muted)}
+header.app .tag{display:block;font-size:13px;color:var(--muted);margin:8px 0 0}
+header.app .head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
 .drop{
+  display:block;
   border:2px dashed var(--line); border-radius:var(--radius); padding:28px 16px; text-align:center;
   background:var(--card); cursor:pointer; transition:border-color .15s,background .15s;
 }
@@ -119,12 +123,17 @@ ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
   text-align:right;letter-spacing:.01em;white-space:nowrap;
   text-shadow:2.5px 2.5px 0 var(--stamp-back);display:flex;flex-direction:column;gap:2px}
 .stamp span:first-child{font-size:17px;letter-spacing:.1em;opacity:.95}
-.ver{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);margin-top:7px}
-header.app .stamp{font-size:20px;text-shadow:2px 2px 0 var(--stamp-back);margin-left:auto}
+.ver{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);margin:6px 0 0}
+header.app .stamp{font-size:20px;text-shadow:2px 2px 0 var(--stamp-back);margin:0;align-items:flex-end}
 header.app .stamp span:first-child{font-size:15px}
 .foot-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
 .foot-row>div:first-child{flex:1 1 320px;min-width:0}
-@media (max-width:600px){header.app .stamp{margin-left:0}.stamp{text-align:left}}
+@media (max-width:600px){
+  header.app{gap:14px}
+  header.app .head-side{flex-direction:row;align-items:center;justify-content:space-between;width:100%}
+  header.app .stamp{text-align:left;align-items:flex-start}
+  .stamp{text-align:left}
+}
 
 
 /* ---------- ประตูรหัสผ่าน ---------- */
@@ -145,7 +154,7 @@ header.app .stamp span:first-child{font-size:15px}
 .gate-msg{font-size:13.5px;color:var(--ext);min-height:1.2em;font-weight:500}
 .gate-msg.info{color:var(--muted);font-weight:400;word-break:break-all;font-family:ui-monospace,monospace;font-size:12px}
 .gate-foot{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:11px;margin-top:3px}
-button.lock{margin-left:auto;background:none;color:var(--muted);border:1px solid var(--line);
+button.lock{background:none;color:var(--muted);border:1px solid var(--line);
   font-weight:500;font-size:13px;padding:4px 13px;border-radius:999px}
 button.lock:hover{color:var(--ink);border-color:var(--muted)}
 
@@ -186,12 +195,16 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 <div class="wrap" id="shell" hidden>
 
 <header class="app noprint">
-  <h1>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h1>
-  <span class="tag">อัปโหลดตาราง SCA หรือกรอกเอง · คำนวณในเครื่อง ข้อมูลไม่ถูกส่งออก</span>
-  <button type="button" class="lock" id="lock">ล็อก</button>
-  <div class="stamp" aria-label="ลิขสิทธิ์ โดย หมอผิ่น"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
+  <div class="head-main">
+    <h1>SCA Analysis &amp; Treatment Plan By " หมอผิ่น "</h1>
+    <p class="tag">อัปโหลดตาราง SCA หรือกรอกเอง · คำนวณในเครื่อง ข้อมูลไม่ถูกส่งออก</p>
+    <p class="ver" id="ver"></p>
+  </div>
+  <div class="head-side">
+    <div class="stamp" aria-label="ลิขสิทธิ์ โดย หมอผิ่น"><span>ลิขสิทธิ์</span><span>โดย หมอผิ่น</span></div>
+    <button type="button" class="lock" id="lock">ล็อก</button>
+  </div>
 </header>
-<div class="ver" id="ver" style="margin:-10px 0 14px"></div>
 
 <div id="view-input" class="noprint">
   <label class="drop" id="drop">
