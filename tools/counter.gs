@@ -30,7 +30,77 @@ function doPost(e) {
   return record_(e);
 }
 function doGet(e) {
+  var p = (e && e.parameter) ? e.parameter : {};
+  if (p.read === '1') {
+    var json = JSON.stringify(stats_());
+    var cb = String(p.callback || '').replace(/[^A-Za-z0-9_]/g, '');
+    if (cb) {
+      return ContentService.createTextOutput(cb + '(' + json + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+  }
   return record_(e);
+}
+
+/** สรุปตัวเลขจากแท็บ log — ใช้กับหน้า stats (ไม่นับเป็นการเข้าใช้) */
+function stats_() {
+  var sh = logSheet_();
+  var last = sh.getLastRow();
+  var rows = (last > 1) ? sh.getRange(2, 1, last - 1, 7).getValues() : [];
+  var today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  var d7 = Utilities.formatDate(new Date(Date.now() - 6 * 86400000), TZ, 'yyyy-MM-dd');
+  var d30 = Utilities.formatDate(new Date(Date.now() - 29 * 86400000), TZ, 'yyyy-MM-dd');
+
+  function dayKey(v) {
+    return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v).slice(0, 10);
+  }
+
+  var APPS = ['sca', 'ceph'];
+  var out = { updated: Utilities.formatDate(new Date(), TZ, 'd/M/yyyy HH:mm'), apps: {}, daily: [] };
+  var u = {};
+  APPS.forEach(function (a) {
+    out.apps[a] = { users: 0, opens: 0, today: 0, d7: 0,
+                    gate_ok: 0, gate_fail: 0, gate_users: 0,
+                    xlsx: 0, calc: 0, calc_users: 0 };
+    u[a] = { all: {}, today: {}, d7: {}, gate: {}, calc: {} };
+  });
+  var perDay = {};
+
+  rows.forEach(function (r) {
+    var day = dayKey(r[1]), app = String(r[2]), ev = String(r[3]),
+        detail = String(r[4]), sid = String(r[5]);
+    if (APPS.indexOf(app) < 0) return;
+    var o = out.apps[app], uu = u[app];
+    if (sid) uu.all[sid] = 1;
+    if (ev === 'open') o.opens++;
+    if (sid && day === today) uu.today[sid] = 1;
+    if (sid && day >= d7) uu.d7[sid] = 1;
+    if (ev === 'gate' && detail === 'ok') { o.gate_ok++; if (sid) uu.gate[sid] = 1; }
+    if (ev === 'gate' && detail === 'fail') o.gate_fail++;
+    if (ev === 'xlsx') o.xlsx++;
+    if (ev === 'calc') { o.calc++; if (sid) uu.calc[sid] = 1; }
+    if (day >= d30) {
+      if (!perDay[day]) perDay[day] = { sca: {}, ceph: {} };
+      if (sid) perDay[day][app][sid] = 1;
+    }
+  });
+
+  APPS.forEach(function (a) {
+    var o = out.apps[a], uu = u[a];
+    o.users = Object.keys(uu.all).length;
+    o.today = Object.keys(uu.today).length;
+    o.d7 = Object.keys(uu.d7).length;
+    o.gate_users = Object.keys(uu.gate).length;
+    o.calc_users = Object.keys(uu.calc).length;
+  });
+
+  Object.keys(perDay).sort().forEach(function (d) {
+    out.daily.push({ date: d,
+                     sca: Object.keys(perDay[d].sca).length,
+                     ceph: Object.keys(perDay[d].ceph).length });
+  });
+  return out;
 }
 
 function record_(e) {
