@@ -698,15 +698,12 @@ try {
   window[cb] = (d) => {
     cleanup();
     try {
-      const sca = (d && d.apps && d.apps.sca) || {};
-      const ceph = (d && d.apps && d.apps.ceph) || {};
-      const today = (sca.today || 0) + (ceph.today || 0);
+      const sca = (d && d.apps && d.apps.sca) || {};   // เฉพาะสถิติของแอพนี้
       const html =
         '<span class="u-t">สถิติการใช้งาน</span>' +
-        `<span class="u-chip">SCA <b>${n(sca.users)}</b> คน <i>เปิด ${n(sca.opens)} ครั้ง</i></span>` +
-        `<span class="u-chip">Ceph Protractor <b>${n(ceph.users)}</b> คน <i>เปิด ${n(ceph.opens)} ครั้ง</i></span>` +
-        `<span class="u-chip">วันนี้ <b>${n(today)}</b> คน</span>` +
-        '<a class="u-more" href="https://mathold.github.io/sca-app/stats/" target="_blank" rel="noopener">ดูสถิติทั้งหมด →</a>';
+        `<span class="u-chip">ผู้ใช้ทั้งหมด <b>${n(sca.users)}</b> คน</span>` +
+        `<span class="u-chip">เปิดใช้ <b>${n(sca.opens)}</b> ครั้ง</span>` +
+        `<span class="u-chip">วันนี้ <b>${n(sca.today)}</b> คน</span>`;
       boxes.forEach((b) => { b.innerHTML = html; b.hidden = false; });
     } catch (e) {}
   };
