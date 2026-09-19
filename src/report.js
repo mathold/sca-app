@@ -20,8 +20,8 @@ const PLAN_TH = {
 const planClass = (d) => d === 'Extraction' ? 'plan-ext' : (d === 'IPR' ? 'plan-ipr' : 'plan-non');
 
 function kv(rows) {
-  return `<table class="kv">${rows.filter(Boolean).map(([k, v, cls]) =>
-    `<tr><th>${esc(k)}</th><td${cls ? ` class="${cls}"` : ''}>${v}</td></tr>`).join('')}</table>`;
+  return `<table class="kv">${rows.filter(Boolean).map(([k, v, cls, strong]) =>
+    `<tr${strong ? ' class="strong"' : ''}><th>${esc(k)}</th><td${cls ? ` class="${cls}"` : ''}>${v}</td></tr>`).join('')}</table>`;
 }
 
 function archBudget(b, plan, label) {
@@ -40,9 +40,9 @@ function archBudget(b, plan, label) {
       ['มุมฟัน (torque)', (b.torque_space >= 0 ? '+' : '') + n2(b.torque_space) + ' mm'],
       ['Midline', n2(b.midline) + ' mm'],
       ['Retract (ขวา + ซ้าย)', `${n2(b.retraction_right)} + ${n2(b.retraction_left)} = ${n2(b.retraction_total)} mm`],
-      ['<b>รวมที่ต้องการ (Net Required)</b>', '<b>' + n2(b.net_required) + ' mm</b>'],
+      ['รวมที่ต้องการ (Net Required)', n2(b.net_required) + ' mm', null, true],
       ['พื้นที่ที่มีอยู่แล้ว', n2(b.base_supply) + ' mm'],
-      ['<b>ยังขาด</b>', `<b class="${b.remaining > 6 ? 'hot' : ''}">${n2(b.remaining)} mm</b>`],
+      ['ยังขาด', n2(b.remaining) + ' mm', b.remaining > 6 ? 'hot' : null, true],
       ['Anchorage', esc(b.category)],
       ['อุปกรณ์ที่แนะนำ', esc(b.appliance_recommendation)],
     ])}
