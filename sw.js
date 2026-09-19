@@ -1,5 +1,5 @@
 /* service worker — ให้ใช้งานออฟไลน์ได้หลังเปิดครั้งแรก */
-const CACHE = 'sca-v8';
+const CACHE = 'sca-v9';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './vendor/xlsx.full.min.js',
