@@ -651,7 +651,9 @@ try {
 } catch {}
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')
+    .then(reg => { reg.update(); })   // เช็คว่ามี sw.js ตัวใหม่ทุกครั้งที่เปิดแอพ
+    .catch(() => {}));
 }
 </script>
 </body>

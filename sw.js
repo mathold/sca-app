@@ -1,9 +1,15 @@
 /* service worker — ให้ใช้งานออฟไลน์ได้หลังเปิดครั้งแรก
  *
- * สำคัญ: ทุกครั้งที่แก้ไฟล์ในแอพ ต้องเปลี่ยนเลข CACHE ข้างล่างด้วย
- * ไม่งั้นเครื่องที่เคยเปิดแล้วจะยังใช้ไฟล์เก่าค้างอยู่
+ * network-first: ออนไลน์ = ได้ไฟล์ล่าสุดเสมอ · ออฟไลน์ = ใช้ของที่แคชไว้
+ *
+ * เดิมเป็น cache-first แล้วต้องไล่เปลี่ยนเลข CACHE เองทุกครั้งที่ deploy
+ * ถ้าลืม เบราว์เซอร์จะเห็น sw.js เหมือนเดิมทุกไบต์ -> ไม่อัปเดตอะไรเลย
+ * เครื่องที่เคยเปิดแล้วจึงค้างของเก่าถาวร (ที่มาของการต้องพิมพ์ ?v=NN ต่อท้ายลิงก์)
+ *
+ * VERSION ด้านล่าง tools/bump.py แก้ให้อัตโนมัติ — ไม่ต้องแก้มือ
  */
-const CACHE = 'sca-v16';
+const VERSION = '19';
+const CACHE = 'sca-v' + VERSION;
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './vendor/xlsx.full.min.js',
@@ -26,16 +32,21 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
-// cache-first สำหรับไฟล์ของแอพ · ไม่แตะคำขออื่น และไม่เก็บ URL ที่มี query string
+// network-first สำหรับไฟล์ของแอพ · ไม่แตะคำขออื่น และไม่เก็บ URL ที่มี query string
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.search) return;
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match('./index.html')))
+    fetch(e.request)
+      .then(res => {
+        // เก็บเฉพาะที่โหลดสำเร็จจริง ไม่งั้นหน้า error จะถูกแคชแทนของดี
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
   );
 });
