@@ -128,6 +128,7 @@ header.app .stamp span:first-child{font-size:15px}
 
 
 /* ---------- ประตูรหัสผ่าน ---------- */
+[hidden]{display:none !important}   /* สำคัญ: ไม่งั้น .gate ที่เป็น display:flex จะยังโผล่ทับแอปอยู่ */
 .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 16px}
 .gate-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
   padding:30px 26px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:11px}
