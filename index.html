@@ -76,6 +76,16 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .alert.red{border-color:var(--ext)}
 .alert ul{margin:6px 0 0;padding-left:20px}
 
+/* ---------- ลายน้ำลิขสิทธิ์บนพื้นหลังรายงาน ----------
+   ฝังเป็น SVG ใน background-image ของกล่องรายงาน จึงอยู่ "หลัง" ข้อความเสมอ
+   ไม่ต้องใช้ pseudo-element ที่อาจทับเนื้อหา · ความจางกำหนดด้วย fill-opacity ใน SVG
+   print-color-adjust:exact เพื่อให้ลายน้ำติดไปตอนพิมพ์ด้วย (ไม่งั้น Safari/Chrome ตัดทิ้ง) */
+#report{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='360' height='230'><text x='180' y='115' font-family='Sarabun, Thonburi, sans-serif' font-size='26' font-weight='700' fill='%231d4ed8' fill-opacity='0.055' text-anchor='middle' transform='rotate(-28 180 115)'>ลิขสิทธิ์ โดย หมอผิ่น</text></svg>");
+  background-repeat:repeat;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+
 /* ---------- รายงาน ---------- */
 .report{font-size:15px}
 .rep-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;
