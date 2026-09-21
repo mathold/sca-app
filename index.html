@@ -549,6 +549,19 @@ function buildForm() {
     const g = el('div', { class: 'fields' });
     items.forEach(([n, l, t]) => g.appendChild(field(n, l, t)));
     f.appendChild(g);
+    // "ฟันที่หายไปแล้ว" วางไว้บนสุดถัดจากข้อมูลคนไข้ เพราะเป็นช่องที่ต้องกรอกเองทุกเคส —
+    // ตาราง SCA ไม่มีข้อมูลนี้ sca_xlsx.js จึงส่ง [] มาเสมอ · เดิมช่องนี้อยู่ล่างสุดของฟอร์ม
+    // (ช่องที่ 58 จาก 58) จึงถูกมองข้าม แล้วระบบวางแผนถอนเป็นคู่ผิดเคสที่พรีโมลาร์หายไปแล้ว
+    if (title === GROUPS[0][0]) {
+      f.appendChild(el('h2', { class: 'sec', text: 'ฟันที่หายไปแล้ว — ต้องกรอกเอง' }));
+      const mg = el('div', { class: 'fields' });
+      const mw = el('div', { class: 'f' });
+      mw.appendChild(el('label', { for: 'missing_teeth', text: 'ฟันที่หายไปแล้ว (FDI คั่นด้วย , )' }));
+      mw.appendChild(el('input', { id: 'missing_teeth', name: 'missing_teeth', type: 'text', placeholder: 'เช่น 15, 24, 34', autocomplete: 'off' }));
+      mg.appendChild(mw);
+      f.appendChild(mg);
+      f.appendChild(el('p', { class: 'note', text: 'ตาราง SCA ไม่มีข้อมูลนี้ — ถ้ามีพรีโมลาร์ (ตำแหน่ง 4/5) หายไปแล้ว จำนวนซี่ที่ต้องถอนจะเปลี่ยน · ฟันครบทุกซี่ = เว้นว่าง' }));
+    }
   }
   f.appendChild(el('h2', { class: 'sec', text: 'Curve of Spee (ล่าง)' }));
   const cos = el('div', { class: 'fields' });
@@ -583,10 +596,6 @@ function buildForm() {
     w.appendChild(s);
     g.appendChild(w);
   }
-  const mw = el('div', { class: 'f' });
-  mw.appendChild(el('label', { for: 'missing_teeth', text: 'ฟันที่หายไปแล้ว (FDI คั่นด้วย , )' }));
-  mw.appendChild(el('input', { id: 'missing_teeth', name: 'missing_teeth', type: 'text', placeholder: 'เช่น 24, 34', autocomplete: 'off' }));
-  g.appendChild(mw);
   f.appendChild(g);
 }
 
