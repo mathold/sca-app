@@ -268,6 +268,64 @@ function spaceBudget(arch, decision, premolarsExtracted, expansionGain,
 /* ------------------------------------------------------------------ *
  * analyze_case
  * ------------------------------------------------------------------ */
+/* เขี้ยวลง Class I ได้ไหม (กติกาคุณหมอ 21 ก.ย. 2569) — ตรงกับ ortho_calc.canine_plan
+ *   1) โปรไฟล์ตัดสินทิศก่อน: E-line ริมฝีปากล่าง > 0 = ยื่น -> ดึงเขี้ยวถอย molar อยู่กับที่
+ *                                             <= 0 = ปกติ -> ให้ molar เดินมาปิด
+ *   2) เขี้ยวเดิน = ช่องที่ต้องปิด − molar เดินมาหน้า · ต้องการ Mu − Ml = Su − Sl − need
+ *   3) เกินเพดาน molar 7 mm -> ไม่ได้ ต้อง TAD / เปลี่ยนแบบถอน / ยอมที่ x mm
+ */
+function caninePlan(canReq, budgetUpper, budgetLower, elineLowerLip) {
+  const cap = ASSUMPTIONS.molar_protraction_max_mm;
+  const out = { available: false, sides: [], profile: null, note: null, prosthesis_suggested: false };
+  if (!canReq.available) { out.note = 'ไม่มีข้อมูล Canine relationship ในฟอร์ม'; return out; }
+  const protr = (elineLowerLip !== null && elineLowerLip !== undefined
+                 && elineLowerLip > ASSUMPTIONS.eline_protrusive_mm);
+  out.profile = protr
+    ? `ยื่น (E-line ล่าง ${elineLowerLip > 0 ? '+' : ''}${n2s(elineLowerLip)} mm) -> ปิดช่องด้วยการดึงฟันหน้า/เขี้ยวถอย`
+    : `ปกติ/ถอย (E-line ล่าง ${elineLowerLip === null || elineLowerLip === undefined ? 'ไม่มีข้อมูล' : n2s(elineLowerLip) + ' mm'}) -> ปิดช่องด้วย molar เดินมาหน้า`;
+
+  const space = (b, quad) => {
+    const s = (b.sides || []).find((x) => x.quad === quad);
+    if (!s) return 0;
+    return pyRound((s.spacing || 0) + (s.extract_here ? (b.per_side_ext || 0) : 0), 2);
+  };
+  for (const [sideTh, uq, lq, need] of [
+        ['ขวา', 'Q1', 'Q4', canReq.upper_right || 0],
+        ['ซ้าย', 'Q2', 'Q3', canReq.upper_left || 0]]) {
+    const su = space(budgetUpper, uq), sl = space(budgetLower, lq);
+    if (su > cap + 0.01 || sl > cap + 0.01) out.prosthesis_suggested = true;
+    const capU = Math.min(su, cap), capL = Math.min(sl, cap);
+    const k = pyRound(su - sl - need, 2);
+    let mu, ml;
+    if (protr) { if (k >= 0) { mu = k; ml = 0; } else { mu = 0; ml = -k; } }
+    else {
+      ml = Math.min(capL, Math.max(capU - k, 0));
+      mu = pyRound(ml + k, 2);
+      if (mu < 0) { mu = 0; ml = pyRound(-k, 2); }
+    }
+    mu = pyRound(mu, 2); ml = pyRound(ml, 2);
+    const short = Math.max(mu - capU, ml - capL, -mu, -ml, 0);
+    out.sides.push(short > 0.01
+      ? { side_th: sideTh, need: pyRound(need, 2), space_upper: su, space_lower: sl,
+          molar_upper: null, molar_lower: null, feasible: false, short_mm: pyRound(short, 2),
+          label: `เขี้ยวลง Class I ไม่ได้ — ขาด ${n2s(short)} mm (ต้อง TAD / เปลี่ยนแบบถอน / ยอมจบที่ ${n2s(short)} mm)` }
+      : { side_th: sideTh, need: pyRound(need, 2), space_upper: su, space_lower: sl,
+          molar_upper: mu, molar_lower: ml, feasible: true, short_mm: 0,
+          label: `ได้ — molar บนเดินมาหน้า ${n2s(mu)} · ล่าง ${n2s(ml)} mm` });
+  }
+  out.available = true;
+  const notes = [out.sides.every((r) => r.feasible)
+    ? 'เขี้ยวลง Class I ได้ทั้งสองข้างภายใต้ทิศที่โปรไฟล์กำหนด'
+    : 'เขี้ยวลง Class I ไม่ได้ทุกข้าง — ดูรายข้าง'];
+  if (out.prosthesis_suggested) {
+    notes.push(`มีควอดรันต์ที่ช่องต้องปิดเกิน ${cap} mm — ปิดด้วยจัดฟันล้วนไม่ไหว ควรพิจารณาใส่ฟัน`);
+  }
+  out.note = notes.join(' · ');
+  return out;
+}
+
+const n2s = (v) => (Math.round(v * 100) / 100).toFixed(2);
+
 function analyzeCase(inp) {
   const mode = String(inp.treatment_mode || 'auto').toLowerCase();
   const ciiiFacc = (mode === 'class_iii_facc');
@@ -723,6 +781,7 @@ function analyzeCase(inp) {
     },
     mcnamara: mcn,
     canine: canReq,
+    canine_plan: caninePlan(canReq, budgetUpper, budgetLower, inp.eline_lower_lip),
     molar_finish: molarFinish,
     growth_appliance_advice: growthApplianceAdvice(inp.growth_pattern),
     eline_advice: elineAdvice(inp.eline_upper_lip, inp.eline_lower_lip),

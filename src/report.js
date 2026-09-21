@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.45';
+const APP_VERSION = '1.0.46';
 const APP_UPDATED = '21 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -254,6 +254,15 @@ function renderReport(r, extraWarnings = []) {
         r.canine.skipped_reason ? ['หมายเหตุ', esc(r.canine.skipped_reason)] : null,
       ]) : '<p class="note">ไม่มีข้อมูล Canine relationship ในฟอร์ม</p>'}
       ${r.canine.detail && r.canine.detail.length ? `<ul class="plain">${r.canine.detail.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
+      ${r.canine_plan && r.canine_plan.available ? `<table class="grid">
+        <caption>เขี้ยวลง Class I ได้ไหม — ${esc(r.canine_plan.profile)}</caption>
+        <thead><tr><th>ข้าง</th><th class="num">ช่องที่ต้องปิด บน / ล่าง</th><th class="num">ต้องแก้ canine</th><th>ผล</th></tr></thead>
+        <tbody>${r.canine_plan.sides.map(s => `<tr><td>${esc(s.side_th)}</td>
+          <td class="num">${n1(s.space_upper)} / ${n1(s.space_lower)}</td>
+          <td class="num">${n1(s.need)}</td>
+          <td class="${s.feasible ? 'ok' : 'hot'}">${esc(s.label)}</td></tr>`).join('')}</tbody>
+      </table>
+      ${r.canine_plan.prosthesis_suggested ? '<div class="alert">มีควอดรันต์ที่ช่องต้องปิดเกิน 7 mm — ปิดด้วยจัดฟันล้วนไม่ไหว <b>ควรพิจารณาใส่ฟัน</b></div>' : ''}` : ''}
       ${r.molar_finish.available ? `<table class="grid">
         <caption>Molar หลังจบ (ผลลัพธ์ ไม่ใช่เป้าหมาย)</caption>
         <thead><tr><th>ข้าง</th><th>เริ่มต้น</th><th class="num">burn บน</th><th class="num">burn ล่าง</th><th>หลังจบ</th></tr></thead>

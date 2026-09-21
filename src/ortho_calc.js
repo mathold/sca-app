@@ -107,7 +107,9 @@ const ASSUMPTIONS = {
   l1_apog_target_high: 3.0,
   l1_apog_target_low: 1.0,
   l1apog_torque_coeff: 0.9,
-  l1apog_ipr_guard_mm: 3.0,   // ดึงฟันล่างให้ L1-APog=3 แล้วต้อง IPR เกินค่านี้ -> ไม่ดึงเพิ่ม
+  l1apog_ipr_guard_mm: 3.0,
+  molar_protraction_max_mm: 7.0,  // molar เดินมาหน้าได้ไม่เกินนี้ เกินกว่านี้ควรใส่ฟัน
+  eline_protrusive_mm: 0.0,       // ริมฝีปากล่างต่อ E-line เกินค่านี้ = โปรไฟล์ยื่น   // ดึงฟันล่างให้ L1-APog=3 แล้วต้อง IPR เกินค่านี้ -> ไม่ดึงเพิ่ม
   expansion_gain_ratio: 0.7,
   ipr_max_per_arch: 6.0,
   distalize_default_mm: 3.0,
