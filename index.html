@@ -45,13 +45,16 @@ header.app h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance;
 header.app .tag{display:block;font-size:13px;color:var(--muted);margin:8px 0 0}
 header.app .head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+/* ช่องวางไฟล์ = กรอบเขียว (คู่กับกล่องแดง "ฟันที่หายไป" ด้านบน) */
 .drop{
   display:block;
-  border:2px dashed var(--line); border-radius:var(--radius); padding:28px 16px; text-align:center;
-  background:var(--card); cursor:pointer; transition:border-color .15s,background .15s;
+  border:2px dashed var(--non); border-radius:var(--radius); padding:28px 16px; text-align:center;
+  background:color-mix(in srgb,var(--non) 6%,var(--card)); cursor:pointer;
+  transition:border-color .15s,background .15s;
 }
-.drop.hot{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
-.drop h2{margin:0 0 6px;font-size:17px}
+.drop.hot{border-color:var(--non);border-style:solid;
+  background:color-mix(in srgb,var(--non) 14%,var(--card))}
+.drop h2{margin:0 0 6px;font-size:17px;color:var(--non)}
 .drop p{margin:0;color:var(--muted);font-size:14px}
 .drop input{display:none}
 h2.sec{font-size:15px;text-transform:none;letter-spacing:.02em;color:var(--muted);margin:22px 0 10px;font-weight:600}
@@ -86,7 +89,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
 /* ตอนลากไฟล์มาวาง กล่องเปลี่ยนสีพื้น — คงลายน้ำไว้ */
-.drop.hot{background-color:color-mix(in srgb,var(--accent) 8%,var(--card))}
+.drop.hot{background-color:color-mix(in srgb,var(--non) 14%,var(--card))}
 
 /* ---------- รายงาน ---------- */
 .report{font-size:15px}
@@ -122,6 +125,14 @@ table.grid tr.rec td{background:color-mix(in srgb,var(--accent) 10%,transparent)
 .note{font-size:13.5px;color:var(--muted);margin:7px 0}
 .reason{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
 .warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:9px;padding:8px 11px;font-size:13.5px;margin:8px 0}
+/* ---------- กล่อง "ฟันที่หายไป" (ค่าที่ตาราง SCA ไม่มี ต้องกรอกเอง) ---------- */
+.missing-box{background:var(--alert-bg);border:2px solid var(--ext);border-radius:11px;
+  padding:12px 14px;margin:0 0 14px}
+.missing-box h2{margin:0 0 9px;font-size:16px;font-weight:700;color:var(--ext);letter-spacing:.01em}
+.missing-box .ast{font-size:19px;line-height:1;vertical-align:-1px}
+.missing-box .mb-row{max-width:340px}
+.missing-box input{width:100%}
+.missing-box .mb-hint{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--muted)}
 .ok{color:var(--non);font-weight:600}
 .hot{color:var(--ext);font-weight:600}
 ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
@@ -267,6 +278,20 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 </header>
 
 <div id="view-input" class="noprint">
+
+  <!-- ฟันที่หายไป — วางบนสุดใต้แถบสถิติ เพราะเป็นค่าเดียวที่ตาราง SCA ไม่มี
+       (sca_xlsx.js ส่ง missing_teeth = [] เสมอ) ต้องกรอกเองทุกเคส
+       ถ้าลืม ระบบจะวางแผนถอนเป็นคู่ (2 ซี่/arch) ซึ่งผิดเมื่อพรีโมลาร์หายไปแล้ว -->
+  <section class="missing-box" id="missing-box">
+    <h2><span class="ast">*</span> ฟันที่หายไป (missing teeth)</h2>
+    <div class="mb-row">
+      <input id="missing_teeth" name="missing_teeth" type="text" placeholder="เช่น 15, 24, 34" autocomplete="off">
+    </div>
+    <p class="mb-hint">กรอกเป็นเลข FDI คั่นด้วยจุลภาค · <b>ฟันครบทุกซี่ = เว้นว่าง</b><br>
+      ตาราง SCA ไม่มีข้อมูลนี้ จึงต้องกรอกเอง — ถ้ามีพรีโมลาร์ (ตำแหน่ง 4/5) หายไปแล้ว
+      <b>จำนวนซี่ที่ต้องถอนจะเปลี่ยน</b> (ข้างนั้นมีช่องอยู่แล้ว ไม่ถอนซ้ำ)</p>
+  </section>
+
   <label class="drop" id="drop">
     <input type="file" id="file" accept=".xlsx,.xlsm">
     <h2>วางไฟล์ SCA Table (.xlsx) ที่นี่</h2>
@@ -549,19 +574,6 @@ function buildForm() {
     const g = el('div', { class: 'fields' });
     items.forEach(([n, l, t]) => g.appendChild(field(n, l, t)));
     f.appendChild(g);
-    // "ฟันที่หายไปแล้ว" วางไว้บนสุดถัดจากข้อมูลคนไข้ เพราะเป็นช่องที่ต้องกรอกเองทุกเคส —
-    // ตาราง SCA ไม่มีข้อมูลนี้ sca_xlsx.js จึงส่ง [] มาเสมอ · เดิมช่องนี้อยู่ล่างสุดของฟอร์ม
-    // (ช่องที่ 58 จาก 58) จึงถูกมองข้าม แล้วระบบวางแผนถอนเป็นคู่ผิดเคสที่พรีโมลาร์หายไปแล้ว
-    if (title === GROUPS[0][0]) {
-      f.appendChild(el('h2', { class: 'sec', text: 'ฟันที่หายไปแล้ว — ต้องกรอกเอง' }));
-      const mg = el('div', { class: 'fields' });
-      const mw = el('div', { class: 'f' });
-      mw.appendChild(el('label', { for: 'missing_teeth', text: 'ฟันที่หายไปแล้ว (FDI คั่นด้วย , )' }));
-      mw.appendChild(el('input', { id: 'missing_teeth', name: 'missing_teeth', type: 'text', placeholder: 'เช่น 15, 24, 34', autocomplete: 'off' }));
-      mg.appendChild(mw);
-      f.appendChild(mg);
-      f.appendChild(el('p', { class: 'note', text: 'ตาราง SCA ไม่มีข้อมูลนี้ — ถ้ามีพรีโมลาร์ (ตำแหน่ง 4/5) หายไปแล้ว จำนวนซี่ที่ต้องถอนจะเปลี่ยน · ฟันครบทุกซี่ = เว้นว่าง' }));
-    }
   }
   f.appendChild(el('h2', { class: 'sec', text: 'Curve of Spee (ล่าง)' }));
   const cos = el('div', { class: 'fields' });
