@@ -87,6 +87,11 @@ th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}
 th{color:var(--text-muted);font-weight:600}
 td{font-variant-numeric:tabular-nums}
+/* ตารางแยกรายเครื่อง */
+table.tbl td:first-child,table.tbl th:first-child,
+table.tbl td:nth-child(2),table.tbl th:nth-child(2){text-align:left}
+table.tbl td.num,table.tbl th.num{text-align:right}
+table.tbl .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 .muted{color:var(--text-muted);font-size:12.5px}
 a{color:var(--series-1)}
 .hide{display:none}
@@ -136,7 +141,18 @@ a{color:var(--series-1)}
     </section>
 
     <section>
-      <h2 class="sec">ผู้ใช้ต่อวัน — 30 วันล่าสุด (นับแท็บที่ไม่ซ้ำ)</h2>
+      <h2 class="sec">แยกรายเครื่อง — ใครใช้มากน้อย</h2>
+      <div class="chart-card">
+        <div class="scroller"><table class="tbl" id="devices"></table></div>
+        <p class="muted" style="margin:8px 2px 10px">
+          รหัสเครื่องเป็นรหัสสุ่มที่เก็บไว้ในเบราว์เซอร์ของแต่ละเครื่อง ไม่ได้ระบุตัวบุคคล ·
+          ล้างข้อมูลเว็บไซต์หรือเปลี่ยนเบราว์เซอร์แล้วจะได้รหัสใหม่ · เปิดหลายแท็บบนเครื่องเดียวนับเป็นเครื่องเดียว
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sec">ผู้ใช้ต่อวัน — 30 วันล่าสุด (นับเครื่องที่ไม่ซ้ำ)</h2>
       <div class="chart-card">
         <div class="legend">
           <span><i class="dot" style="background:var(--series-1)"></i>SCA App</span>
@@ -256,7 +272,7 @@ async function load(){
     const d = await fetchStats();
     const a = d.apps.sca, c = d.apps.ceph;
     tiles($('t-sca'), [
-      [a.users, 'ผู้ใช้ทั้งหมด (แท็บไม่ซ้ำ)'],
+      [a.users, 'ผู้ใช้ทั้งหมด (เครื่องไม่ซ้ำ)'],
       [a.opens, 'จำนวนครั้งที่ใช้งานจริง'],
       [a.today, 'ใช้งานวันนี้'],
       [a.d7, 'ใช้งาน 7 วันล่าสุด'],
@@ -270,11 +286,12 @@ async function load(){
       [a.gate_users, 'คนที่ผ่านรหัสได้'],
     ], true);
     tiles($('t-ceph'), [
-      [c.users, 'ผู้ใช้ทั้งหมด (แท็บไม่ซ้ำ)'],
+      [c.users, 'ผู้ใช้ทั้งหมด (เครื่องไม่ซ้ำ)'],
       [c.opens, 'จำนวนครั้งที่ใช้งานจริง'],
       [c.today, 'ใช้งานวันนี้'],
       [c.d7, 'ใช้งาน 7 วันล่าสุด'],
     ]);
+    drawDevices(d.devices || []);
     DAILY = d.daily || [];
     drawChart(DAILY);
     drawTable(DAILY);
@@ -285,6 +302,22 @@ async function load(){
     $('err').hidden = false;
     $('err').textContent = 'โหลดข้อมูลไม่สำเร็จ — ลองกดรีเฟรชอีกครั้ง หรือเปิดชีตโดยตรง (' + e.message + ')';
   }
+}
+
+function drawDevices(list){
+  const el = $('devices');
+  if (!list.length) {
+    el.innerHTML = '<tbody><tr><td class="muted" style="padding:14px">ยังไม่มีข้อมูลการใช้งาน</td></tr></tbody>';
+    return;
+  }
+  const rows = list.map((d, i) =>
+    `<tr><td>${i + 1}</td><td class="mono">${d.id}</td>` +
+    `<td class="num">${d.sca || 0}</td><td class="num">${d.ceph || 0}</td>` +
+    `<td class="num"><b>${d.total || 0}</b></td>` +
+    `<td class="mono">${d.first || '-'}</td><td class="mono">${d.last || '-'}</td></tr>`).join('');
+  el.innerHTML =
+    '<thead><tr><th>#</th><th>รหัสเครื่อง</th><th class="num">SCA</th><th class="num">Ceph</th>' +
+    '<th class="num">รวม</th><th>ใช้ครั้งแรก</th><th>ใช้ล่าสุด</th></tr></thead><tbody>' + rows + '</tbody>';
 }
 
 function niceMax(v){

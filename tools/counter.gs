@@ -57,7 +57,9 @@ function stats_() {
   }
 
   var APPS = ['sca', 'ceph'];
-  var out = { updated: Utilities.formatDate(new Date(), TZ, 'd/M/yyyy HH:mm'), apps: {}, daily: [] };
+  var out = { updated: Utilities.formatDate(new Date(), TZ, 'd/M/yyyy HH:mm'),
+              apps: {}, daily: [], devices: [] };
+  var dev = {};                       // รหัสเครื่อง -> จำนวนครั้งที่ใช้จริงแยกตามแอป
   var u = {};
   APPS.forEach(function (a) {
     out.apps[a] = { users: 0, opens: 0, today: 0, d7: 0,
@@ -73,7 +75,16 @@ function stats_() {
     if (APPS.indexOf(app) < 0) return;
     var o = out.apps[app], uu = u[app];
     if (sid) uu.all[sid] = 1;
-    if (ev === 'open') o.opens++;
+    if (ev === 'open') {
+      o.opens++;
+      if (sid) {                      // นับรายเครื่อง — event 'open' = การใช้งานจริง 1 ครั้ง
+        if (!dev[sid]) dev[sid] = { id: sid, sca: 0, ceph: 0, total: 0, first: day, last: day };
+        var dd = dev[sid];
+        dd[app]++; dd.total++;
+        if (day < dd.first) dd.first = day;
+        if (day > dd.last) dd.last = day;
+      }
+    }
     if (sid && day === today) uu.today[sid] = 1;
     if (sid && day >= d7) uu.d7[sid] = 1;
     if (ev === 'gate' && detail === 'ok') { o.gate_ok++; if (sid) uu.gate[sid] = 1; }
@@ -94,6 +105,9 @@ function stats_() {
     o.gate_users = Object.keys(uu.gate).length;
     o.calc_users = Object.keys(uu.calc).length;
   });
+
+  out.devices = Object.keys(dev).map(function (k) { return dev[k]; })
+                 .sort(function (a, b) { return b.total - a.total; });
 
   Object.keys(perDay).sort().forEach(function (d) {
     out.daily.push({ date: d,

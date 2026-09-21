@@ -311,16 +311,23 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
   var ENDPOINT = 'https://script.google.com/macros/s/AKfycbwPgC4WvRnV26rlJhsGqKy_oUbDvSTBtIahNSBKAurciGx1Wl06d4NhqO0rc1P991QSDQ/exec';
   var APP = 'sca';
   function tab() {
+    // รหัสประจำเครื่อง — เก็บใน localStorage จึงอยู่ถาวรจนกว่าจะล้างข้อมูลเว็บไซต์
+    // (เดิมใช้ sessionStorage ซึ่งหายทุกครั้งที่ปิดแท็บ เครื่องเดียวเปิด 3 แท็บกลายเป็น 3 "คน")
+    // ย้ายค่าเดิมจาก sessionStorage มาให้ด้วย เครื่องที่เคยใช้อยู่แล้วจะได้ไม่ถูกนับเป็นเครื่องใหม่
     try {
-      var s = sessionStorage.getItem('sca.tab');
+      var s = localStorage.getItem('sca.device');
       if (!s) {
-        s = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()) + String(Date.now()))
-              .replace(/[^a-z0-9]/gi, '').slice(0, 12);
-        sessionStorage.setItem('sca.tab', s);
+        s = sessionStorage.getItem('sca.tab');
+        if (!s) {
+          s = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()) + String(Date.now()))
+                .replace(/[^a-z0-9]/gi, '').slice(0, 12);
+        }
+        localStorage.setItem('sca.device', s);
       }
       return s;
     } catch (e) { return 'nostore'; }
   }
+  window.scaDeviceId = function () { try { return tab(); } catch (e) { return '-'; } };
   function p2(n) { return (n < 10 ? '0' : '') + n; }
   function stamp() {
     var d = new Date();
@@ -471,7 +478,8 @@ import { makeCase } from './src/ortho_calc.js';
 import { analyzeCase } from './src/analyze.js';
 import { readScaWorkbook, suggestGrowthPattern } from './src/sca_xlsx.js';
 import { renderReport, APP_VERSION, APP_UPDATED } from './src/report.js';
-document.getElementById('ver').textContent = `เวอร์ชัน ${APP_VERSION} · แก้ล่าสุด ${APP_UPDATED}`;
+document.getElementById('ver').textContent = `เวอร์ชัน ${APP_VERSION} · แก้ล่าสุด ${APP_UPDATED}`
+  + (window.scaDeviceId ? ` · รหัสเครื่องนี้ ${window.scaDeviceId()}` : '');
 
 /* ---------- นิยามฟอร์ม ---------- */
 const GROUPS = [
