@@ -515,7 +515,10 @@ function analyzeCase(inp) {
     } else {
       lowerAp = 0.0;
     }
-    upperAp = pyRound(Math.max(totalAp - lowerAp, 0.0), 2);
+    // ทิศ overjet ต้องตรงกับขั้น torque: ดึงฟันล่างถอย -> OJ เพิ่มอีก lowerAp
+  // ฟันบนจึงต้องถอยชดเชยด้วย เพื่อคุม OJ = 2 ตลอด (ตรงกับ ortho_calc.py)
+  //   OJ_จบ = overjetFinal + lowerAp - upperAp = 2
+  upperAp = pyRound(Math.max(overjetFinal - 2.0 + lowerAp, 0.0), 2);
   }
 
   // ---- Canine ----
@@ -542,8 +545,10 @@ function analyzeCase(inp) {
   canReq.lower_retract_left = lowerApLeft;
   const canDrive = pyRound(Math.max(upperApRight, upperApLeft) - upperAp, 2);
   canReq.canine_drives_by_mm = canDrive > 0.01 ? canDrive : 0.0;
+  // OJ ที่จะจบจริง = OJ หลัง torque + (ดึงล่าง ทำให้เพิ่ม) − (ดึงบน ทำให้ลด)
   canReq.overjet_if_canine_driven = canDrive > 0.01
-    ? pyRound(overjetFinal - Math.max(upperApRight, upperApLeft), 2) : null;
+    ? pyRound(overjetFinal + Math.max(lowerApRight, lowerApLeft)
+              - Math.max(upperApRight, upperApLeft), 2) : null;
 
   // ---- ฟันที่หายไป ----
   const sd = inp.space_discrepancy;
