@@ -1,6 +1,7 @@
 /**
- * ตัวนับการใช้งาน — SCA App + Ceph Protractor
+ * ตัวนับการใช้งาน — SCA App + Ceph Protractor + กราฟหุ้นไทย
  * ผูกกับชีต "สถิติการใช้งาน — SCA App + Ceph Protractor"
+ *   (รับ 3 แอป: sca · ceph · stock — ดูตัวแปร APPS)
  *
  * วิธีใช้
  *   1) Deploy > New deployment > Web app
@@ -56,7 +57,7 @@ function stats_() {
     return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v).slice(0, 10);
   }
 
-  var APPS = ['sca', 'ceph'];
+  var APPS = ['sca', 'ceph', 'stock'];
   var out = { updated: Utilities.formatDate(new Date(), TZ, 'd/M/yyyy HH:mm'),
               apps: {}, daily: [], devices: [] };
   var dev = {};                       // รหัสเครื่อง -> จำนวนครั้งที่ใช้จริงแยกตามแอป
@@ -78,7 +79,11 @@ function stats_() {
     if (ev === 'open') {
       o.opens++;
       if (sid) {                      // นับรายเครื่อง — event 'open' = การใช้งานจริง 1 ครั้ง
-        if (!dev[sid]) dev[sid] = { id: sid, sca: 0, ceph: 0, total: 0, first: day, last: day };
+        if (!dev[sid]) {
+          var blank = { id: sid, total: 0, first: day, last: day };
+          APPS.forEach(function (a) { blank[a] = 0; });
+          dev[sid] = blank;
+        }
         var dd = dev[sid];
         dd[app]++; dd.total++;
         if (day < dd.first) dd.first = day;
@@ -92,7 +97,10 @@ function stats_() {
     if (ev === 'xlsx') o.xlsx++;
     if (ev === 'calc') { o.calc++; if (sid) uu.calc[sid] = 1; }
     if (day >= d30) {
-      if (!perDay[day]) perDay[day] = { sca: {}, ceph: {} };
+      if (!perDay[day]) {
+        perDay[day] = {};
+        APPS.forEach(function (a) { perDay[day][a] = {}; });
+      }
       if (sid) perDay[day][app][sid] = 1;
     }
   });
@@ -110,9 +118,9 @@ function stats_() {
                  .sort(function (a, b) { return b.total - a.total; });
 
   Object.keys(perDay).sort().forEach(function (d) {
-    out.daily.push({ date: d,
-                     sca: Object.keys(perDay[d].sca).length,
-                     ceph: Object.keys(perDay[d].ceph).length });
+    var row = { date: d };
+    APPS.forEach(function (a) { row[a] = Object.keys(perDay[d][a]).length; });
+    out.daily.push(row);
   });
   return out;
 }
@@ -143,54 +151,65 @@ function setup() {
   sh = ss.insertSheet(SUM, 0);
 
   var L = "'" + LOG + "'!";
+  var NC = 4;                               // จำนวนคอลัมน์: ป้าย + 3 แอป
   var rows = [];
-  rows.push(['สถิติการใช้งาน — SCA App + Ceph Protractor', '', '']);
-  rows.push(['อัปเดตอัตโนมัติทุกครั้งที่เปิดชีต', '', '']);
-  rows.push(['', '', '']);
-  rows.push(['', 'SCA App', 'Ceph Protractor']);
-  rows.push(['ผู้ใช้ทั้งหมด (นับแท็บที่ไม่ซ้ำ)',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"sca")',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"ceph")']);
-  rows.push(['จำนวนครั้งที่เปิดเว็บ',
-    '=COUNTIFS(' + L + 'C2:C,"sca",' + L + 'D2:D,"open")',
-    '=COUNTIFS(' + L + 'C2:C,"ceph",' + L + 'D2:D,"open")']);
-  rows.push(['ใช้งานวันนี้ (แท็บไม่ซ้ำ)',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"sca",' + L + 'B2:B,TEXT(TODAY(),"yyyy-mm-dd"))',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"ceph",' + L + 'B2:B,TEXT(TODAY(),"yyyy-mm-dd"))']);
-  rows.push(['ใช้งาน 7 วันล่าสุด (แท็บไม่ซ้ำ)',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"sca",' + L + 'B2:B,">="&TEXT(TODAY()-6,"yyyy-mm-dd"))',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"ceph",' + L + 'B2:B,">="&TEXT(TODAY()-6,"yyyy-mm-dd"))']);
-  rows.push(['', '', '']);
-  rows.push(['เฉพาะ SCA App', '', '']);
-  rows.push(['กรอกรหัสถูก', '=COUNTIFS(' + L + 'C2:C,"sca",' + L + 'D2:D,"gate",' + L + 'E2:E,"ok")', '']);
-  rows.push(['กรอกรหัสผิด', '=COUNTIFS(' + L + 'C2:C,"sca",' + L + 'D2:D,"gate",' + L + 'E2:E,"fail")', '']);
-  rows.push(['คนที่ผ่านรหัสได้ (ไม่ซ้ำ)',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"sca",' + L + 'D2:D,"gate",' + L + 'E2:E,"ok")', '']);
-  rows.push(['อัปโหลดไฟล์ xlsx', '=COUNTIFS(' + L + 'C2:C,"sca",' + L + 'D2:D,"xlsx")', '']);
-  rows.push(['คำนวณแผนสำเร็จ', '=COUNTIFS(' + L + 'C2:C,"sca",' + L + 'D2:D,"calc")', '']);
-  rows.push(['คนที่เคยคำนวณจริง (ไม่ซ้ำ)',
-    '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"sca",' + L + 'D2:D,"calc")', '']);
-  rows.push(['', '', '']);
-  rows.push(['รายวัน (ใหม่สุดอยู่บน)', '', '']);
-  rows.push(['วันที่', 'SCA — แท็บไม่ซ้ำ', 'Ceph — แท็บไม่ซ้ำ']);
+  function row(label, a, b, c) { rows.push([label, a || '', b || '', c || '']); }
+  function uniq(app, extra) {               // เครื่องไม่ซ้ำของแอปนั้น
+    return '=COUNTUNIQUEIFS(' + L + 'F2:F,' + L + 'C2:C,"' + app + '"' + (extra || '') + ')';
+  }
+  function cnt(app, extra) {                // จำนวนครั้ง
+    return '=COUNTIFS(' + L + 'C2:C,"' + app + '"' + (extra || '') + ')';
+  }
+  var TODAY  = ',' + L + 'B2:B,TEXT(TODAY(),"yyyy-mm-dd")';
+  var LAST7  = ',' + L + 'B2:B,">="&TEXT(TODAY()-6,"yyyy-mm-dd")';
+  var OPEN   = ',' + L + 'D2:D,"open"';
 
-  sh.getRange(1, 1, rows.length, 3).setValues(rows);
+  row('สถิติการใช้งาน — SCA App · Ceph Protractor · กราฟหุ้นไทย');
+  row('อัปเดตอัตโนมัติทุกครั้งที่เปิดชีต');
+  row('');
+  row('', 'SCA App', 'Ceph Protractor', 'กราฟหุ้นไทย');
+  row('ผู้ใช้ทั้งหมด (นับเครื่องที่ไม่ซ้ำ)', uniq('sca'), uniq('ceph'), uniq('stock'));
+  row('จำนวนครั้งที่ใช้งานจริง', cnt('sca', OPEN), cnt('ceph', OPEN), cnt('stock', OPEN));
+  row('ใช้งานวันนี้ (เครื่องไม่ซ้ำ)', uniq('sca', TODAY), uniq('ceph', TODAY), uniq('stock', TODAY));
+  row('ใช้งาน 7 วันล่าสุด (เครื่องไม่ซ้ำ)', uniq('sca', LAST7), uniq('ceph', LAST7), uniq('stock', LAST7));
+  row('');
+  row('รหัสผ่าน / การใช้งานเชิงลึก');
+  row('กรอกรหัสถูก', cnt('sca', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'),
+                     cnt('ceph', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'),
+                     cnt('stock', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'));
+  row('กรอกรหัสผิด', cnt('sca', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"fail"'),
+                     cnt('ceph', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"fail"'),
+                     cnt('stock', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"fail"'));
+  row('คนที่ผ่านรหัสได้ (ไม่ซ้ำ)', uniq('sca', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'),
+                                   uniq('ceph', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'),
+                                   uniq('stock', ',' + L + 'D2:D,"gate",' + L + 'E2:E,"ok"'));
+  row('อัปโหลดไฟล์ xlsx (เฉพาะ SCA)', cnt('sca', ',' + L + 'D2:D,"xlsx"'));
+  row('คำนวณแผนสำเร็จ (เฉพาะ SCA)', cnt('sca', ',' + L + 'D2:D,"calc"'));
+  row('คนที่เคยคำนวณจริง (เฉพาะ SCA)', uniq('sca', ',' + L + 'D2:D,"calc"'));
+  row('');
+  row('รายวัน (ใหม่สุดอยู่บน)');
+  row('วันที่', 'SCA — เครื่องไม่ซ้ำ', 'Ceph — เครื่องไม่ซ้ำ', 'หุ้น — เครื่องไม่ซ้ำ');
+
+  sh.getRange(1, 1, rows.length, NC).setValues(rows);
 
   var r = rows.length + 1;
+  function perDay(app) {
+    return 'MAP(d, LAMBDA(x, COUNTUNIQUEIFS(' + L + 'F2:F, ' + L + 'B2:B, x, ' + L + 'C2:C, "' + app + '")))';
+  }
   sh.getRange(r, 1).setFormula(
     '=LET(d, SORT(UNIQUE(FILTER(' + L + 'B2:B, ' + L + 'B2:B<>"")),1,FALSE), ' +
-    'IFERROR(HSTACK(d, ' +
-    'MAP(d, LAMBDA(x, COUNTUNIQUEIFS(' + L + 'F2:F, ' + L + 'B2:B, x, ' + L + 'C2:C, "sca"))), ' +
-    'MAP(d, LAMBDA(x, COUNTUNIQUEIFS(' + L + 'F2:F, ' + L + 'B2:B, x, ' + L + 'C2:C, "ceph")))), ""))');
+    'IFERROR(HSTACK(d, ' + perDay('sca') + ', ' + perDay('ceph') + ', ' + perDay('stock') + '), ""))');
 
   sh.getRange('A1').setFontSize(14).setFontWeight('bold');
-  sh.getRange('A4:C4').setFontWeight('bold');
-  sh.getRange('A11').setFontWeight('bold');
-  sh.getRange(rows.length, 1, 1, 3).setFontWeight('bold');
-  sh.getRange('A5:A9').setFontWeight('bold');
+  sh.getRange(4, 1, 1, NC).setFontWeight('bold');
+  sh.getRange('A5:A8').setFontWeight('bold');
+  sh.getRange('A10').setFontWeight('bold');
+  sh.getRange('A17').setFontWeight('bold');
+  sh.getRange(rows.length, 1, 1, NC).setFontWeight('bold');
   sh.setColumnWidth(1, 260);
   sh.setColumnWidth(2, 140);
   sh.setColumnWidth(3, 140);
+  sh.setColumnWidth(4, 140);
   sh.getRange(r, 1, 1000, 1).setNumberFormat('yyyy-mm-dd');
 }
 

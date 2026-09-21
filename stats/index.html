@@ -11,7 +11,7 @@
   color-scheme: light;
   --surface-1:#fcfcfb; --surface-2:#ffffff; --line:#e6e5e0;
   --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7b7a74;
-  --series-1:#2a78d6; --series-2:#eb6834;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1f9d68;
   --grid:#eceae5;
 }
 @media (prefers-color-scheme: dark){
@@ -19,7 +19,7 @@
     color-scheme: dark;
     --surface-1:#1a1a19; --surface-2:#232321; --line:#35342f;
     --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#96958c;
-    --series-1:#3987e5; --series-2:#d95926;
+    --series-1:#3987e5; --series-2:#d95926; --series-3:#2bb07a;
     --grid:#2c2c29;
   }
 }
@@ -141,6 +141,11 @@ a{color:var(--series-1)}
     </section>
 
     <section>
+      <h2 class="sec"><i class="dot" style="background:var(--series-3)"></i>กราฟหุ้นไทย</h2>
+      <div class="tiles" id="t-stock"></div>
+    </section>
+
+    <section>
       <h2 class="sec">แยกรายเครื่อง — ใครใช้มากน้อย</h2>
       <div class="chart-card">
         <div class="scroller"><table class="tbl" id="devices"></table></div>
@@ -157,6 +162,7 @@ a{color:var(--series-1)}
         <div class="legend">
           <span><i class="dot" style="background:var(--series-1)"></i>SCA App</span>
           <span><i class="dot" style="background:var(--series-2)"></i>Ceph Protractor</span>
+          <span><i class="dot" style="background:var(--series-3)"></i>กราฟหุ้นไทย</span>
         </div>
         <div class="scroller" id="chart"></div>
         <p class="muted" style="margin:8px 2px 10px">
@@ -167,7 +173,7 @@ a{color:var(--series-1)}
     </section>
 
     <p class="muted">
-      นับตามแท็บเบราว์เซอร์ ไม่ใช่ตามคน · ข้อมูลดิบทั้งหมดอยู่ใน
+      นับตามเครื่อง (รหัสที่เก็บไว้ในเบราว์เซอร์) ไม่ใช่ตามคน · ข้อมูลดิบทั้งหมดอยู่ใน
       <a href="https://docs.google.com/spreadsheets/d/1GKwLuhr51Imcpodc3Y8KTO4JwPxwEPfNQnphol3df6A/edit" target="_blank" rel="noopener">Google Sheet</a>
       · ไม่มีการเก็บข้อมูลคนไข้
     </p>
@@ -270,7 +276,9 @@ async function load(){
   $('err').hidden = true;
   try {
     const d = await fetchStats();
-    const a = d.apps.sca, c = d.apps.ceph;
+    const EMPTY = { users: 0, opens: 0, today: 0, d7: 0, calc: 0, calc_users: 0,
+                    xlsx: 0, gate_ok: 0, gate_fail: 0, gate_users: 0 };
+    const a = d.apps.sca || EMPTY, c = d.apps.ceph || EMPTY, k = d.apps.stock || EMPTY;
     tiles($('t-sca'), [
       [a.users, 'ผู้ใช้ทั้งหมด (เครื่องไม่ซ้ำ)'],
       [a.opens, 'จำนวนครั้งที่ใช้งานจริง'],
@@ -290,6 +298,10 @@ async function load(){
       [c.opens, 'จำนวนครั้งที่ใช้งานจริง'],
       [c.today, 'ใช้งานวันนี้'],
       [c.d7, 'ใช้งาน 7 วันล่าสุด'],
+    ]);
+    tiles($('t-stock'), [
+      [k.users, 'เครื่องที่ใช้ทั้งหมด'],
+      [k.opens, 'จำนวนครั้งที่ใช้งานจริง'],
     ]);
     drawDevices(d.devices || []);
     DAILY = d.daily || [];
@@ -313,10 +325,12 @@ function drawDevices(list){
   const rows = list.map((d, i) =>
     `<tr><td>${i + 1}</td><td class="mono">${d.id}</td>` +
     `<td class="num">${d.sca || 0}</td><td class="num">${d.ceph || 0}</td>` +
+    `<td class="num">${d.stock || 0}</td>` +
     `<td class="num"><b>${d.total || 0}</b></td>` +
     `<td class="mono">${d.first || '-'}</td><td class="mono">${d.last || '-'}</td></tr>`).join('');
   el.innerHTML =
     '<thead><tr><th>#</th><th>รหัสเครื่อง</th><th class="num">SCA</th><th class="num">Ceph</th>' +
+    '<th class="num">หุ้น</th>' +
     '<th class="num">รวม</th><th>ใช้ครั้งแรก</th><th>ใช้ล่าสุด</th></tr></thead><tbody>' + rows + '</tbody>';
 }
 
@@ -344,10 +358,11 @@ function drawChart(rows){
   const BAND = Math.max(26, Math.min(48, Math.round(660 / rows.length)));
   const W = PADL + PADR + BAND * rows.length;
   const H = 240, plotH = H - PADT - PADB;
-  const maxV = niceMax(Math.max(1, ...rows.map(r => Math.max(r.sca, r.ceph))));
+  const maxV = niceMax(Math.max(1, ...rows.map(r => Math.max(r.sca, r.ceph, r.stock || 0))));
   const y = v => PADT + plotH - (v / maxV) * plotH;
 
-  const barW = Math.max(5, Math.floor((BAND - 8) / 2) - 1);  // เว้น 2px ระหว่างแท่ง
+  const NB = 3;                                              // 3 แอปต่อวัน
+  const barW = Math.max(4, Math.floor((BAND - 8) / NB) - 1);  // เว้น 2px ระหว่างแท่ง
   const R = 4;
   let g = '', bars = '', labels = '';
 
@@ -371,9 +386,10 @@ function drawChart(rows){
   }
 
   rows.forEach((r, i) => {
-    const x0 = PADL + i * BAND + (BAND - (barW * 2 + 2)) / 2;
+    const x0 = PADL + i * BAND + (BAND - (barW * NB + 2 * (NB - 1))) / 2;
     bars += bar(x0, r.sca, 'var(--series-1)', r.date, 'SCA App');
     bars += bar(x0 + barW + 2, r.ceph, 'var(--series-2)', r.date, 'Ceph Protractor');
+    bars += bar(x0 + (barW + 2) * 2, r.stock || 0, 'var(--series-3)', r.date, 'กราฟหุ้นไทย');
     const every = rows.length > 16 ? 3 : (rows.length > 8 ? 2 : 1);
     if (i % every === 0 || i === rows.length - 1) {
       labels += `<text x="${PADL + i * BAND + BAND / 2}" y="${H - 10}" text-anchor="middle"
@@ -396,7 +412,7 @@ function drawChart(rows){
   host.querySelectorAll('path').forEach(p => {
     p.style.cursor = 'default';
     const show = e => {
-      tip.innerHTML = `${p.dataset.name} · ${p.dataset.day}<br><b>${p.dataset.v}</b> แท็บ`;
+      tip.innerHTML = `${p.dataset.name} · ${p.dataset.day}<br><b>${p.dataset.v}</b> เครื่อง`;
       tip.style.opacity = '1';
       const t = e.touches ? e.touches[0] : e;
       tip.style.left = Math.min(window.innerWidth - 150, t.clientX + 12) + 'px';
@@ -413,9 +429,9 @@ function drawChart(rows){
 function drawTable(rows){
   if (!rows.length) { $('table').innerHTML = ''; return; }
   $('table').innerHTML =
-    '<table><thead><tr><th>วันที่</th><th>SCA App</th><th>Ceph Protractor</th></tr></thead><tbody>' +
+    '<table><thead><tr><th>วันที่</th><th>SCA App</th><th>Ceph Protractor</th><th>กราฟหุ้นไทย</th></tr></thead><tbody>' +
     rows.slice().reverse().map(r =>
-      `<tr><td>${r.date}</td><td>${r.sca}</td><td>${r.ceph}</td></tr>`).join('') +
+      `<tr><td>${r.date}</td><td>${r.sca}</td><td>${r.ceph}</td><td>${r.stock || 0}</td></tr>`).join('') +
     '</tbody></table>';
 }
 
