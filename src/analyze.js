@@ -196,6 +196,7 @@ function spaceBudget(arch, decision, premolarsExtracted, expansionGain,
       retract: pyRound(apS, 2), demand: demandS, supply: supplyS,
       leftover: leftoverS, molar_burn: burnS, burn_ratio: brS,
       extract_here: sideIsExt,
+      can_extract: !!canExt,        // ข้างนี้ยังมีพรีโมลาร์ให้ถอนไหม (ใช้ทำแผนทางเลือก)
       anchorage: isExtPlan ? anchFromBurn(brS) : '—',
     });
   }

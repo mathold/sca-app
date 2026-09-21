@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.44';
+const APP_VERSION = '1.0.45';
 const APP_UPDATED = '21 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -17,6 +17,8 @@ const PLAN_TH = {
   'IPR': 'IPR',
   'Non-Extraction': 'ไม่ถอนฟัน',
 };
+import { buildPlanSheets } from './plan_sheets.js';
+
 const planClass = (d) => d === 'Extraction' ? 'plan-ext' : (d === 'IPR' ? 'plan-ipr' : 'plan-non');
 
 function kv(rows) {
@@ -100,6 +102,30 @@ function archBudget(b, plan, label) {
     ${plan.asymmetric_note ? `<p class="warn">${esc(plan.asymmetric_note)}</p>` : ''}
     ${b.recommendations.map(r => `<p class="note">${esc(r)}</p>`).join('')}
     <p class="reason">${esc(b.reason)}</p>
+  </section>`;
+}
+
+function planSheet(p) {
+  const cell = (items) => items.length
+    ? items.map(x => `${esc(x.label)} <b>${n2(x.mm)}</b>`).join('<br>')
+    : '<span class="muted">—</span>';
+  const rows = p.quads.map(q => `<tr>
+      <th>${esc(q.side)}</th>
+      <td>${cell(q.plus)}</td>
+      <td class="num"><b>${n2(q.totalPlus)}</b></td>
+      <td>${cell(q.minus)}</td>
+      <td class="num"><b>${n2(q.totalMinus)}</b></td>
+    </tr>`).join('');
+  return `
+  <section class="arch">
+    <h3>${esc(p.title)}</h3>
+    <p class="note">${esc(p.note)}</p>
+    <table class="grid">
+      <caption>ดุลพื้นที่รายควอดรันต์ — สองฝั่งต้องเท่ากัน (เหมือนตารางสีแดงในฟอร์ม SCA)</caption>
+      <thead><tr><th>ควอดรันต์</th><th>หาพื้นที่ได้ (+)</th><th class="num">รวม</th>
+        <th>ใช้พื้นที่ (−)</th><th class="num">รวม</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
   </section>`;
 }
 
@@ -213,7 +239,14 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>4 · Canine และ Molar</h2>
+      <h2>4 · แผนทางเลือก — ตารางดุลพื้นที่</h2>
+      <p class="note">ตัวเลขชุดเดียวกับที่กรอกลงฟอร์ม SCA จริง (ใช้สัมประสิทธิ์ของฟอร์ม)
+        ทุกควอดรันต์สองฝั่งต้องเท่ากัน · <b>ส่งให้ดูครบทุกแผน ไม่เลือกให้</b></p>
+      ${buildPlanSheets(r).map(planSheet).join('')}
+    </section>
+
+    <section>
+      <h2>5 · Canine และ Molar</h2>
       ${r.canine.available ? kv([
         ['Canine ขวา / ซ้าย', `${esc(r.canine.label_right)} / ${esc(r.canine.label_left)}`],
         ['ระยะ retract ฟันบน ขวา / ซ้าย', `${n2(r.canine.upper_retract_right)} / ${n2(r.canine.upper_retract_left)} mm`],
@@ -230,7 +263,7 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>5 · เมื่อจบการรักษา</h2>
+      <h2>6 · เมื่อจบการรักษา</h2>
       ${gridKv('ค่าเมื่อจบการรักษา', ['รายการ', 'ค่าที่จะจบ', 'เป้าหมาย', 'ผล'], [
         ['FACC to FH', n1(e.facc) + '°' + (e.facc_kept ? ' (เก็บไว้ — camouflage)' : ''), '0°',
           Math.abs(e.facc) <= 0.5 ? '<span class="ok">ถึงเป้า</span>' : '<span class="hot">ยังห่างเป้า</span>'],
@@ -255,7 +288,7 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>6 · ข้อพิจารณาอื่น</h2>
+      <h2>7 · ข้อพิจารณาอื่น</h2>
       ${forsusBlock}
       <p class="note"><b>Growth:</b> ${r.growth_appliance_advice.map(esc).join(' · ')}</p>
       <p class="note"><b>Soft tissue:</b> ${esc(r.eline_advice)}</p>

@@ -8,12 +8,13 @@
  *
  * VERSION ด้านล่าง tools/bump.py แก้ให้อัตโนมัติ — ไม่ต้องแก้มือ
  */
-const VERSION = '44';
+const VERSION = '45';
 const CACHE = 'sca-v' + VERSION;
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './vendor/xlsx.full.min.js',
   './src/ortho_calc.js', './src/analyze.js', './src/sca_xlsx.js', './src/report.js',
+  './src/plan_sheets.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png',
 ];
 
