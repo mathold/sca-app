@@ -138,6 +138,15 @@ table.grid tr.rec td{background:color-mix(in srgb,var(--accent) 10%,transparent)
 ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
 .arch{border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:14px;background:var(--bg)}
 .disclaimer{border-top:1px solid var(--line);margin-top:26px;padding-top:12px;font-size:12.5px;color:var(--muted)}
+/* ข้อความกำกับว่าผลเป็น AI — ตัวแดง กรอบดำ ต้องสะดุดตาและติดไปกับงานพิมพ์ด้วย */
+.ai-note{border:2px solid #000;border-radius:8px;padding:9px 12px;margin:0 0 9px;
+  color:var(--ext);font-size:13px;line-height:1.5;background:var(--card)}
+.ai-note b{color:var(--ext)}
+@media print{
+  .ai-note{border-color:#000 !important;color:#b91c1c !important;background:#fff !important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ai-note b{color:#b91c1c !important}
+}
 
 
 

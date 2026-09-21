@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.38';
+const APP_VERSION = '1.0.39';
 const APP_UPDATED = '21 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -22,6 +22,46 @@ const planClass = (d) => d === 'Extraction' ? 'plan-ext' : (d === 'IPR' ? 'plan-
 function kv(rows) {
   return `<table class="kv">${rows.filter(Boolean).map(([k, v, cls, strong]) =>
     `<tr${strong ? ' class="strong"' : ''}><th>${esc(k)}</th><td${cls ? ` class="${cls}"` : ''}>${v}</td></tr>`).join('')}</table>`;
+}
+
+// ตารางแบบมีหัวคอลัมน์ (อ่านง่ายกว่า kv ที่เป็นแถว label/value เปล่า ๆ)
+function gridKv(caption, head, rows) {
+  return `<table class="grid">
+    <caption>${esc(caption)}</caption>
+    <thead><tr>${head.map((h, i) => `<th${i ? '' : ''}>${esc(h)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.filter(Boolean).map(cells =>
+      `<tr>${cells.map((c, i) => i === 0 ? `<th>${esc(String(c))}</th>` : `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ควอดรันต์ที่จะถอน — ข้างที่พรีโมลาร์ยังอยู่เท่านั้น (ข้างที่หายแล้วมีช่องอยู่แล้ว)
+function extQuadrants(b, arch) {
+  const q = arch === 'upper'
+    ? { right: 'Q1 (บนขวา)', left: 'Q2 (บนซ้าย)' }
+    : { right: 'Q4 (ล่างขวา)', left: 'Q3 (ล่างซ้าย)' };
+  const out = [];
+  if (b.ext_right_available) out.push(q.right);
+  if (b.ext_left_available) out.push(q.left);
+  return out;
+}
+
+// สรุปว่าแต่ละขากรรไกรวางแผนยังไง: ถอนกี่ซี่ ควอดรันต์ไหน เสริมด้วย IPR/distalize เท่าไร
+function planSummaryRow(b, plan, arch, label) {
+  const ext = b.is_ext_plan ? b.ext_teeth_planned : 0;
+  const quads = ext > 0 ? extQuadrants(b, arch).slice(0, ext) : [];
+  // plan_sources = [[ชื่อวิธี, mm], ...] — ตัดบรรทัดถอนฟันออก เหลือเฉพาะวิธีเสริม
+  const extra = (b.plan_sources || [])
+    .filter(([name]) => !/ถอนฟัน/.test(name))
+    .map(([name, mm]) => `${esc(name.replace(/\s*\(.*?\)\s*/g, ''))} ${n1(mm)} mm`);
+  const short = b.deficit > 0.01;
+  return [
+    label,
+    `<b class="${planClass(plan.decision)}">${esc(PLAN_TH[plan.decision] || plan.decision)}</b>`,
+    ext > 0 ? `<b>${ext} ซี่</b>` : '<span class="muted">ไม่ถอน</span>',
+    quads.length ? esc(quads.join(' · ')) : '<span class="muted">—</span>',
+    extra.length ? extra.join(' · ') : '<span class="muted">—</span>',
+    short ? `<b class="hot">ยังขาด ${n2(b.deficit)} mm</b>` : `<span class="ok">พอดี (เหลือ ${n2(b.leftover)} mm)</span>`,
+  ];
 }
 
 function archBudget(b, plan, label) {
@@ -124,21 +164,21 @@ function renderReport(r, extraWarnings = []) {
     <section>
       <h2>1 · ค่าที่ใช้</h2>
       <div class="cols">
-        ${kv([
-          ['SNA / SNB / ANB', `${n1(r.input_summary.sna)} / ${n1(r.input_summary.snb)} / ${n1(r.input_summary.anb)}`],
-          ['FMA', n1(r.input_summary.fma) + '°'],
-          ['SN-GoGn', n1(r.input_summary.sn_gogn) + '°'],
-          ['Wits', n1(r.input_summary.wits) + ' mm'],
-          ['FACC to FH', n1(r.input_summary.facc_to_fh) + '°'],
-          ['IMPA (ช่อง / จริง)', `${n1(r.input_summary.l1_to_mpl_box)} / ${n1(r.input_summary.l1_to_mpl_absolute)}°`],
+        ${gridKv('โครงกระดูก', ['รายการ', 'ค่าที่วัดได้', 'ค่าปกติ'], [
+          ['SNA / SNB / ANB', `${n1(r.input_summary.sna)} / ${n1(r.input_summary.snb)} / ${n1(r.input_summary.anb)}`, '82 / 80 / 2'],
+          ['FMA', n1(r.input_summary.fma) + '°', '22–25°'],
+          ['SN-GoGn', n1(r.input_summary.sn_gogn) + '°', '32°'],
+          ['Wits', n1(r.input_summary.wits) + ' mm', '0 mm'],
+          ['FACC to FH', n1(r.input_summary.facc_to_fh) + '°', '0°'],
+          ['IMPA (ช่อง / จริง)', `${n1(r.input_summary.l1_to_mpl_box)} / ${n1(r.input_summary.l1_to_mpl_absolute)}°`, '~90°'],
         ])}
-        ${kv([
-          ['1/1 ปัจจุบัน', n1(r.input_summary.interincisal_current) + '°' + (r.input_summary.interincisal_estimated ? ' (ประมาณ)' : '')],
-          ['L1-APog', n2(r.input_summary.l1_apog_current) + ' mm'],
-          ['Overjet / Overbite', `${n1(r.input_summary.overjet_current)} / ${n1(r.input_summary.overbite_current)} mm`],
-          ['COS ที่ใช้', n2(r.input_summary.cos_mm) + ' mm'],
-          ['TSD บน / ล่าง', `${n2(r.input_summary.tooth_size_discrepancy_upper)} / ${n2(r.input_summary.tooth_size_discrepancy_lower)} mm`],
-          ['E-line บน / ล่าง', `${n2(r.input_summary.eline_upper_lip)} / ${n2(r.input_summary.eline_lower_lip)} mm`],
+        ${gridKv('ฟันและเนื้อเยื่อ', ['รายการ', 'ค่าที่วัดได้', 'ค่าปกติ'], [
+          ['1/1 ปัจจุบัน', n1(r.input_summary.interincisal_current) + '°' + (r.input_summary.interincisal_estimated ? ' (ประมาณ)' : ''), '125–131°'],
+          ['L1-APog', n2(r.input_summary.l1_apog_current) + ' mm', '1–3 mm'],
+          ['Overjet / Overbite', `${n1(r.input_summary.overjet_current)} / ${n1(r.input_summary.overbite_current)} mm`, '2 / 2 mm'],
+          ['COS ที่ใช้', n2(r.input_summary.cos_mm) + ' mm', '0 mm'],
+          ['TSD บน / ล่าง', `${n2(r.input_summary.tooth_size_discrepancy_upper)} / ${n2(r.input_summary.tooth_size_discrepancy_lower)} mm`, '0 mm'],
+          ['E-line บน / ล่าง', `${n2(r.input_summary.eline_upper_lip)} / ${n2(r.input_summary.eline_lower_lip)} mm`, '−2 / 0 mm'],
         ])}
       </div>
       ${mcn.available ? `<div class="box"><b>Reference Jaw (McNamara)</b><br>${esc(mcn.note)}</div>`
@@ -164,6 +204,10 @@ function renderReport(r, extraWarnings = []) {
 
     <section>
       <h2>3 · งบพื้นที่และแผน</h2>
+      ${gridKv('สรุปแผนแต่ละขากรรไกร', ['ขากรรไกร', 'แผน', 'ถอน', 'ตำแหน่งที่ถอน', 'วิธีเสริม', 'ผลงบพื้นที่'], [
+        planSummaryRow(r.space_budget.upper, r.treatment_plan.upper, 'upper', 'ฟันบน'),
+        planSummaryRow(r.space_budget.lower, r.treatment_plan.lower, 'lower', 'ฟันล่าง'),
+      ])}
       ${archBudget(r.space_budget.upper, r.treatment_plan.upper, 'ฟันบน')}
       ${archBudget(r.space_budget.lower, r.treatment_plan.lower, 'ฟันล่าง')}
     </section>
@@ -187,12 +231,17 @@ function renderReport(r, extraWarnings = []) {
 
     <section>
       <h2>5 · เมื่อจบการรักษา</h2>
-      ${kv([
-        ['FACC to FH', n1(e.facc) + '°' + (e.facc_kept ? ' (เก็บไว้ — camouflage)' : '')],
-        ['Interincisal 1/1', `${n1(e.interincisal)}° <span class="${e.interincisal_in_range ? 'ok' : 'hot'}">(ช่วงเป้า 125–131°)</span>${e.interincisal_capped ? ' · ถูกจำกัดด้วย IMPA floor' : ''}`],
-        ['Overjet (เฟสจัดฟัน)', n2(e.overjet_ortho_phase) + ' mm → เป้า 2 mm'],
-        ['L1-APog', n1(e.l1_apog) + ' mm' + (e.l1_apog_in_range ? '' : ` (ขยับ ${n2(e.l1_apog_move)} mm)`)],
-        ['ต้องผ่าตัดไหม', e.needs_surgery ? '<b class="hot">ต้องพิจารณาผ่าตัด</b>' : 'ไม่ต้อง'],
+      ${gridKv('ค่าเมื่อจบการรักษา', ['รายการ', 'ค่าที่จะจบ', 'เป้าหมาย', 'ผล'], [
+        ['FACC to FH', n1(e.facc) + '°' + (e.facc_kept ? ' (เก็บไว้ — camouflage)' : ''), '0°',
+          Math.abs(e.facc) <= 0.5 ? '<span class="ok">ถึงเป้า</span>' : '<span class="hot">ยังห่างเป้า</span>'],
+        ['Interincisal 1/1', n1(e.interincisal) + '°' + (e.interincisal_capped ? ' · ถูกจำกัดด้วย IMPA floor' : ''), '125–131°',
+          e.interincisal_in_range ? '<span class="ok">อยู่ในช่วง</span>' : '<span class="hot">นอกช่วง</span>'],
+        ['Overjet (เฟสจัดฟัน)', n2(e.overjet_ortho_phase) + ' mm', '2 mm',
+          Math.abs(e.overjet_ortho_phase - 2) <= 0.5 ? '<span class="ok">ถึงเป้า</span>' : '<span class="hot">ต่างจากเป้า ' + n2(Math.abs(e.overjet_ortho_phase - 2)) + ' mm</span>'],
+        ['L1-APog', n1(e.l1_apog) + ' mm' + (e.l1_apog_in_range ? '' : ` (ขยับ ${n2(e.l1_apog_move)} mm)`), '1–3 mm',
+          e.l1_apog_in_range ? '<span class="ok">อยู่ในช่วง</span>' : '<span class="hot">นอกช่วง</span>'],
+        ['ต้องผ่าตัดไหม', e.needs_surgery ? '<b class="hot">ต้องพิจารณาผ่าตัด</b>' : 'ไม่ต้อง', 'ไม่ต้อง',
+          e.needs_surgery ? '<span class="hot">ทบทวนแผน</span>' : '<span class="ok">ผ่าน</span>'],
       ])}
     </section>
 
@@ -208,8 +257,10 @@ function renderReport(r, extraWarnings = []) {
     <footer class="disclaimer">
       <div class="foot-row">
         <div>
-          ผลทั้งหมดเป็น <b>AI Clinical Decision Support</b> คำนวณจากค่า ceph 2 มิติและโมเดล
-          ตอบไม่ได้ว่าฟันอยู่ในกระดูกหรือไม่ — ต้องยืนยันด้วย CBCT และให้ทันตแพทย์ผู้รักษาตัดสินใจก่อนใช้จริงทุกครั้ง
+          <div class="ai-note">
+            ผลทั้งหมดเป็น <b>AI Clinical Decision Support</b> คำนวณจากค่า ceph 2 มิติและโมเดล
+            ตอบไม่ได้ว่าฟันอยู่ในกระดูกหรือไม่ — ต้องยืนยันด้วย CBCT และให้ทันตแพทย์ผู้รักษาตัดสินใจก่อนใช้จริงทุกครั้ง
+          </div>
           <div class="ver">เวอร์ชัน ${APP_VERSION} · แก้ล่าสุด ${APP_UPDATED}</div>
         </div>
         <div class="stamp" aria-label="ลิขสิทธิ์ โดย ${APP_OWNER}">
