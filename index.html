@@ -340,7 +340,7 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
       }
     } catch (e) {}
   };
-  window.scaTrack('open');
+  // ไม่ยิงตอนเปิดหน้า — นับเฉพาะตอนใช้งานจริง (กดคำนวณแผนการรักษา)
 })();
 </script>
 <script>
@@ -447,14 +447,14 @@ document.getElementById('gate-form').addEventListener('submit', async (e) => {
   if (ok) {
     try { localStorage.setItem(UNLOCK_KEY, PASS_HASH); } catch {}
     gateMsg.textContent = ''; input.value = ''; openApp();
-    if (window.scaTrack) scaTrack('gate', 'ok');
+
   } else {
     gateMsg.textContent = raw.trim() === ''
       ? 'ยังไม่ได้พิมพ์รหัสผ่าน'
       : (hasThai(raw)
           ? 'แป้นพิมพ์อยู่ภาษาไทย — สลับเป็นอังกฤษแล้วพิมพ์ใหม่'
           : 'รหัสผ่านไม่ถูกต้อง — ติ๊ก "แสดงรหัสที่พิมพ์" เพื่อตรวจดู');
-    if (window.scaTrack) scaTrack('gate', 'fail');
+
     input.select();
   }
 });
@@ -652,7 +652,6 @@ async function handleFile(file) {
     fillForm(input);
     readWarnings = warnings;
     msg.textContent = `อ่าน "${file.name}" (ชีต ${sheet}) เรียบร้อย — ตรวจค่าก่อนคำนวณได้เลย`;
-    if (window.scaTrack) scaTrack('xlsx');
     if (warnings.length) {
       warnBox.innerHTML = `<div class="alert"><b>ตรวจก่อนคำนวณ</b><ul>${warnings.map(w => `<li>${w.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('')}</ul></div>`;
     }
@@ -688,7 +687,8 @@ document.getElementById('calc').addEventListener('click', () => {
     document.getElementById('view-input').hidden = true;
     document.getElementById('view-report').hidden = false;
     window.scrollTo(0, 0);
-    if (window.scaTrack) scaTrack('calc');
+    // นับการใช้งานจริงตรงนี้จุดเดียว — 'open' คือตัวที่หน้าสถิติใช้นับ "ครั้งที่ใช้"
+    if (window.scaTrack) { scaTrack('open'); scaTrack('calc'); }
     try { localStorage.setItem('sca.last', JSON.stringify(inp)); } catch {}
   } catch (err) {
     alert('คำนวณไม่สำเร็จ: ' + err.message);
@@ -741,7 +741,7 @@ try {
       const html =
         '<span class="u-t">สถิติการใช้งาน</span>' +
         `<span class="u-chip">ผู้ใช้ทั้งหมด <b>${n(sca.users)}</b> คน</span>` +
-        `<span class="u-chip">เปิดใช้ <b>${n(sca.opens)}</b> ครั้ง</span>` +
+        `<span class="u-chip">ใช้งาน <b>${n(sca.opens)}</b> ครั้ง</span>` +
         `<span class="u-chip">วันนี้ <b>${n(sca.today)}</b> คน</span>`;
       boxes.forEach((b) => { b.innerHTML = html; b.hidden = false; });
     } catch (e) {}
