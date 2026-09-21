@@ -139,13 +139,16 @@ ul.plain{padding-left:20px;font-size:14px;margin:8px 0}
 .arch{border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:14px;background:var(--bg)}
 .disclaimer{border-top:1px solid var(--line);margin-top:26px;padding-top:12px;font-size:12.5px;color:var(--muted)}
 /* ข้อความกำกับว่าผลเป็น AI — ตัวแดง กรอบดำ ต้องสะดุดตาและติดไปกับงานพิมพ์ด้วย */
-.ai-note{border:2px solid #000;border-radius:8px;padding:9px 12px;margin:0 0 9px;
-  color:var(--ext);font-size:13px;line-height:1.5;background:var(--card)}
-.ai-note b{color:var(--ext)}
+.ai-note{border:3px solid #d81f1f;border-radius:9px;padding:11px 14px;margin:0 0 9px;
+  font-size:14.5px;line-height:1.75;background:var(--card);
+  /* ตัวหนังสือสองชั้นแบบเดียวกับตราลิขสิทธิ์: ตัวแดงทับเงาดำเยื้อง
+     (ขอบรอบทิศทำให้ตัวอักษรไทยตันจนอ่านยากที่ขนาดนี้) */
+  color:#d81f1f;font-weight:700;text-shadow:1.5px 1.5px 0 #000}
+.ai-note b{color:#d81f1f}
 @media print{
-  .ai-note{border-color:#000 !important;color:#b91c1c !important;background:#fff !important;
+  .ai-note{border-color:#d81f1f !important;color:#d81f1f !important;background:#fff !important;
     -webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ai-note b{color:#b91c1c !important}
+  .ai-note b{color:#d81f1f !important}
 }
 
 
