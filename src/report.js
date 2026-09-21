@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.35';
+const APP_VERSION = '1.0.36';
 const APP_UPDATED = '21 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -67,8 +67,15 @@ function renderReport(r, extraWarnings = []) {
   const w = r.working, e = r.endpoint, mcn = r.mcnamara;
   const modeTh = { class_i_ii: 'Class I / II (หรือ decompensation)', class_iii: 'Class III — camouflage', class_iii_facc: 'Class III + FACC (แผน C)' }[r.mode] || r.mode;
 
-  const extTotal = (r.space_budget.upper.is_ext_plan ? r.space_budget.upper.ext_teeth_planned : 0)
-    + (r.space_budget.lower.is_ext_plan ? r.space_budget.lower.ext_teeth_planned : 0);
+  // สรุปการถอน — ต้องบอกแยกบน/ล่าง ไม่ใช่ยอดรวมอย่างเดียว
+  // (เคสฟันหายข้างเดียวจะถอนบน 1 ล่าง 2 — ยอดรวม "3 ซี่" เฉย ๆ ใช้วางแผนไม่ได้)
+  const extUpper = r.space_budget.upper.is_ext_plan ? r.space_budget.upper.ext_teeth_planned : 0;
+  const extLower = r.space_budget.lower.is_ext_plan ? r.space_budget.lower.ext_teeth_planned : 0;
+  const extTotal = extUpper + extLower;
+  const extParts = [];
+  if (extUpper > 0) extParts.push(`บน ${extUpper} ซี่`);
+  if (extLower > 0) extParts.push(`ล่าง ${extLower} ซี่`);
+  const extText = extTotal > 0 ? `ถอน ${extParts.join(' · ')} (รวม ${extTotal} ซี่)` : 'ไม่ต้องถอนฟัน';
 
   const warnBlocks = [];
   if (extraWarnings.length) warnBlocks.push(`<div class="alert"><b>ตรวจก่อนใช้</b><ul>${extraWarnings.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`);
@@ -84,6 +91,16 @@ function renderReport(r, extraWarnings = []) {
   }
   if (r.root_torque_upper) warnBlocks.push(`<div class="alert">ฟันบนใช้ buccal root torque — ยืนยัน bony envelope ด้วย CBCT</div>`);
 
+  // ฟันที่หายไป: ตาราง SCA ไม่มีช่องนี้ (sca_xlsx.js ตั้ง missing_teeth = [] เสมอ)
+  // ต้องกรอกเองในฟอร์ม — ถ้าลืม ระบบจะคิดว่าฟันครบแล้ววางแผนถอนเป็นคู่ (2 ซี่/arch)
+  // ซึ่งผิดสำหรับเคสที่มีพรีโมลาร์หายไปแล้ว จึงต้องเตือนทุกครั้งที่ช่องนี้ว่าง
+  const missingList = (r.dentition && r.dentition.missing) || [];
+  if (missingList.length) {
+    warnBlocks.push(`<div class="alert">ฟันที่หายไปแล้ว: <b>${esc(missingList.join(', '))}</b> — ข้างที่พรีโมลาร์หาย (ตำแหน่ง 4/5) มีช่องอยู่แล้ว ระบบจึงไม่ถอนซ้ำข้างนั้น</div>`);
+  } else {
+    warnBlocks.push(`<div class="alert">ยังไม่ได้ระบุ <b>ฟันที่หายไปแล้ว</b> — ตาราง SCA ไม่มีข้อมูลนี้ ต้องกรอกเองในฟอร์ม · ถ้ามีพรีโมลาร์ (ตำแหน่ง 4/5) หายไปแล้ว <b>จำนวนซี่ที่ต้องถอนจะเปลี่ยน</b> (ข้างนั้นมีช่องอยู่แล้ว ไม่ถอนซ้ำ)</div>`);
+  }
+
   const forsusBlock = r.forsus.needed
     ? `<div class="alert red"><b>เข้าเงื่อนไข Forsus</b> — ${esc(r.forsus.subtype_label)}<br>${esc(r.forsus.note)}</div>`
     : `<p class="note">Forsus: ${esc(r.forsus.subtype_label)} — ${esc(r.forsus.note)}</p>`;
@@ -98,7 +115,7 @@ function renderReport(r, extraWarnings = []) {
       <div class="verdict">
         <div class="v-line"><span>ฟันบน</span><b class="${planClass(r.treatment_plan.upper.decision)}">${esc(PLAN_TH[r.treatment_plan.upper.decision])}</b></div>
         <div class="v-line"><span>ฟันล่าง</span><b class="${planClass(r.treatment_plan.lower.decision)}">${esc(PLAN_TH[r.treatment_plan.lower.decision])}</b></div>
-        <div class="v-ext">${extTotal > 0 ? `ถอนรวม ${extTotal} ซี่` : 'ไม่ต้องถอนฟัน'}</div>
+        <div class="v-ext">${esc(extText)}</div>
       </div>
     </header>
 
