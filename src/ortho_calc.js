@@ -107,6 +107,7 @@ const ASSUMPTIONS = {
   l1_apog_target_high: 3.0,
   l1_apog_target_low: 1.0,
   l1apog_torque_coeff: 0.9,
+  l1apog_ipr_guard_mm: 3.0,   // ดึงฟันล่างให้ L1-APog=3 แล้วต้อง IPR เกินค่านี้ -> ไม่ดึงเพิ่ม
   expansion_gain_ratio: 0.7,
   ipr_max_per_arch: 6.0,
   distalize_default_mm: 3.0,
@@ -222,19 +223,13 @@ function lowerTorqueCorrection(l1ToMplBox, deltaU1, interincisalCurrent, faccToF
 
   const iiInterim = ii + deltaU1;
 
-  // 1/1 ที่อยู่ในช่วงยอมรับ 125-131 แล้ว = ไม่ต้องขยับต่อ (ตัดสินใจคุณหมอ 18 ก.ย. 2569)
-  // นอกช่วง -> ขยับไปที่ "ขอบใกล้สุด" ของช่วง ไม่ใช่ดันไป 131 เสมอ
+  // 1/1 เล็งที่ 131 เสมอ (ตัดสินใจคุณหมอ 21 ก.ย. 2569 — ตรงกับ ortho_calc.py)
+  // ช่วง 125-131 เหลือไว้เป็นเกณฑ์ "ยอมรับได้" ตอนรายงานผล ไม่ใช่เป้าที่หยุดกลางทาง
   const iiLo = ASSUMPTIONS.interincisal_range_low;
   const iiHi = ASSUMPTIONS.interincisal_range_high;
   const alreadyInRange = (iiLo <= iiInterim && iiInterim <= iiHi);
-  let iiGoal, deltaL1;
-  if (alreadyInRange) {
-    iiGoal = iiInterim;
-    deltaL1 = 0.0;              // เข้าช่วงแล้ว ไม่ขยับ ไม่กินพื้นที่
-  } else {
-    iiGoal = iiInterim > iiHi ? iiHi : iiLo;
-    deltaL1 = iiGoal - iiInterim;   // + = ต้อง upright (retrocline) ต่อ
-  }
+  const iiGoal = iiTarget;
+  const deltaL1 = iiGoal - iiInterim;   // + = ต้อง upright (retrocline) ต่อ
 
   const spaceLower = (deltaL1 / 5.0) * 1.2;
   const deltaOj2 = (deltaL1 / 5.0) * 1.3;

@@ -96,6 +96,18 @@ function spaceBudget(arch, decision, premolarsExtracted, expansionGain,
     extUsed = pyRound(pe * avgToothWidth, 2);
     planSources.push([`ถอนฟัน ${pe} ซี่ (พรีโมลาร์ ~${fmtG(avgToothWidth)} mm/ซี่)`, extUsed]);
     planLabel = `Extraction — ถอน ${pe} ซี่`;
+    // ถอนแล้วยังขาด -> เติม IPR แล้ว distalize ให้งบลงตัวในแผนเลย (ตรงกับ ortho_calc.py)
+    const short1 = pyRound(remaining - extUsed, 2);
+    if (short1 > 0.01) {
+      iprUsed = pyRound(Math.min(iprMax, short1), 2);
+      if (iprUsed > 0) { planSources.push(['IPR (~0.3–0.5 mm/ซี่)', iprUsed]); planLabel += ' + IPR'; }
+      const short2 = pyRound(short1 - iprUsed, 2);
+      if (short2 > 0.01) {
+        distUsed = pyRound(Math.min(distalizeDefault, short2), 2);
+        planSources.push([`Distalize molar (~${fmtG(distalizeDefault)} mm/arch)`, distUsed]);
+        planLabel += ' + Distalize';
+      }
+    }
   } else {
     iprUsed = pyRound(Math.min(iprMax, remaining), 2);
     planSources.push(['IPR (~0.3–0.5 mm/ซี่)', iprUsed]);
@@ -239,6 +251,7 @@ function spaceBudget(arch, decision, premolarsExtracted, expansionGain,
     base_supply: baseSupply, remaining,
     plan_label: planLabel, plan_sources: planSources, plan_supply: planSupply,
     ext2_space: ext2Space, options,
+    ext_used: pyRound(extUsed, 2), ipr_used: pyRound(iprUsed, 2), dist_used: pyRound(distUsed, 2),
     ext_teeth_planned: extTeethPlanned, ext_sides_avail: extSidesAvail,
     ext_right_available: !!extRight, ext_left_available: !!extLeft,
     ext_note: extNote,
@@ -558,22 +571,61 @@ function analyzeCase(inp) {
     if (t.length === 2 && '1234'.includes(t[0]) && '45'.includes(t[1])) missingQuads.add(t[0]);
   }
 
-  const budgetUpper = spaceBudget('upper', null, inp.premolars_extracted_upper,
-    expansionUpper.total_space_gained_mm, inp.tooth_size_discrepancy_upper,
-    0.0, midlineUpper, up.space_upper_torque_mm, upperAp, {
-      qRight: sd.q1, qLeft: sd.q2, midRight: inp.midline.q1, midLeft: inp.midline.q2,
-      forceNonExt: classIiForsus,
-      extRight: !missingQuads.has('1'), extLeft: !missingQuads.has('2'),
-      apNeedRight: upperApRight, apNeedLeft: upperApLeft,
-    });
-  const budgetLower = spaceBudget('lower', null, inp.premolars_extracted_lower,
-    expansionLower.total_space_gained_mm, inp.tooth_size_discrepancy_lower,
-    cosComponentLower, midlineLower, low.space_lower_torque_mm, lowerAp, {
-      qRight: sd.q4, qLeft: sd.q3, midRight: inp.midline.q4, midLeft: inp.midline.q3,
-      forceNonExt: classIiForsus, protractionSupplyIn: protractionLower,
-      extRight: !missingQuads.has('4'), extLeft: !missingQuads.has('3'),
-      apNeedRight: lowerApRight, apNeedLeft: lowerApLeft,
-    });
+  const mkBudgets = (uAp, uR, uL, lAp, lR, lL) => [
+    spaceBudget('upper', null, inp.premolars_extracted_upper,
+      expansionUpper.total_space_gained_mm, inp.tooth_size_discrepancy_upper,
+      0.0, midlineUpper, up.space_upper_torque_mm, uAp, {
+        qRight: sd.q1, qLeft: sd.q2, midRight: inp.midline.q1, midLeft: inp.midline.q2,
+        forceNonExt: classIiForsus,
+        extRight: !missingQuads.has('1'), extLeft: !missingQuads.has('2'),
+        apNeedRight: uR, apNeedLeft: uL,
+      }),
+    spaceBudget('lower', null, inp.premolars_extracted_lower,
+      expansionLower.total_space_gained_mm, inp.tooth_size_discrepancy_lower,
+      cosComponentLower, midlineLower, low.space_lower_torque_mm, lAp, {
+        qRight: sd.q4, qLeft: sd.q3, midRight: inp.midline.q4, midLeft: inp.midline.q3,
+        forceNonExt: classIiForsus, protractionSupplyIn: protractionLower,
+        extRight: !missingQuads.has('4'), extLeft: !missingQuads.has('3'),
+        apNeedRight: lR, apNeedLeft: lL,
+      }),
+  ];
+
+  let [budgetUpper, budgetLower] = mkBudgets(upperAp, upperApRight, upperApLeft,
+                                             lowerAp, lowerApRight, lowerApLeft);
+
+  // ด่านตรวจ L1-APog กับ IPR — ตรงกับ ortho_calc.py
+  // ดึงฟันล่างให้ L1-APog = 3 ทำให้ฟันบนต้องถอยชดเชยด้วย งบตึงทั้งสอง arch
+  // ถ้าต้องแลกด้วย IPR เกินเพดาน -> ไม่ดึงเพิ่ม ยอมรับ L1-APog หลัง torque
+  let l1apogRetractSkipped = false;
+  if (lowerAp > 0.01 && !ciii && !ciiiFacc && !classIiForsus) {
+    const iprNeeded = Math.max(budgetUpper.ipr_used || 0, budgetLower.ipr_used || 0);
+    if (iprNeeded > ASSUMPTIONS.l1apog_ipr_guard_mm) {
+      upperAp = pyRound(Math.max(overjetFinal - 2.0, 0.0), 2);
+      if (canineApplies && canReq.available) {
+        upperApRight = pyRound(Math.max(upperAp, canReq.upper_right), 2);
+        upperApLeft = pyRound(Math.max(upperAp, canReq.upper_left), 2);
+        lowerApRight = pyRound(canReq.lower_right, 2);
+        lowerApLeft = pyRound(canReq.lower_left, 2);
+      } else {
+        upperApRight = upperApLeft = upperAp;
+        lowerApRight = lowerApLeft = 0.0;
+      }
+      lowerAp = 0.0;
+      l1apogRetractSkipped = true;
+      canReq.oj_retract_side = pyRound(upperAp, 2);
+      canReq.upper_retract_right = upperApRight;
+      canReq.upper_retract_left = upperApLeft;
+      canReq.lower_retract_right = lowerApRight;
+      canReq.lower_retract_left = lowerApLeft;
+      const canDrive2 = pyRound(Math.max(upperApRight, upperApLeft) - upperAp, 2);
+      canReq.canine_drives_by_mm = canDrive2 > 0.01 ? canDrive2 : 0.0;
+      canReq.overjet_if_canine_driven = canDrive2 > 0.01
+        ? pyRound(overjetFinal + Math.max(lowerApRight, lowerApLeft)
+                  - Math.max(upperApRight, upperApLeft), 2) : null;
+      [budgetUpper, budgetLower] = mkBudgets(upperAp, upperApRight, upperApLeft,
+                                             lowerAp, lowerApRight, lowerApLeft);
+    }
+  }
 
   // ---- ตัดสินแผน (เกณฑ์เดียว: พื้นที่ที่ยังขาด) ----
   const planUpper = spaceManagementDecision(budgetUpper.remaining, l1ApogFinal, totalUpperAfterExp);
@@ -740,10 +792,12 @@ function analyzeCase(inp) {
       overjet: 2.0,
       overjet_ortho_phase: overjetFinal,
       needs_surgery: needsSurgery,
-      l1_apog: l1ApogInRange ? pyRound(l1ApogFinal, 1) : l1ApogTarget,
+      // ด่าน IPR สั่งไม่ให้ดึงเพิ่ม -> ค่าที่จะจบคือค่าหลัง torque ตามจริง
+      l1_apog: (l1ApogInRange || l1apogRetractSkipped) ? pyRound(l1ApogFinal, 1) : l1ApogTarget,
+      l1_apog_retract_skipped: l1apogRetractSkipped,
       l1_apog_current: l1ApogFinal,
       l1_apog_in_range: l1ApogInRange,
-      l1_apog_move: l1ApogInRange ? 0.0 : pyRound(l1ApogFinal - l1ApogTarget, 2),
+      l1_apog_move: (l1ApogInRange || l1apogRetractSkipped) ? 0.0 : pyRound(l1ApogFinal - l1ApogTarget, 2),
     },
     plan_a_root_torque: classIiiPlanA,
     root_torque_upper: rootTorqueUpper,
