@@ -3,8 +3,8 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.46';
-const APP_UPDATED = '21 ก.ย. 2569';
+const APP_VERSION = '1.0.47';
+const APP_UPDATED = '22 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -154,6 +154,9 @@ function renderReport(r, extraWarnings = []) {
   if (e.needs_surgery) warnBlocks.push(`<div class="alert">เฟสจัดฟันไปไม่ถึงเป้า — ต้องพิจารณาผ่าตัด / skeletal correction ร่วม</div>`);
   if (r.class_iii && r.class_iii.floor_extended_used) {
     warnBlocks.push(`<div class="alert">IMPA floor 85° ปิด Overjet ไม่พอ ระบบหย่อนลงถึง ${n1(r.class_iii.impa_floor)}° — ยืนยัน bony envelope ด้วย CBCT</div>`);
+  }
+  if (r.forsus_plan2 && r.forsus_plan2.protraction_capped) {
+    warnBlocks.push(`<div class="alert"><b>Protraction ติดเพดาน</b> — แผนนี้ต้องดึงฟันล่างทั้งซี่มาหน้า ${n2(r.forsus_plan2.protraction_need_mm)} mm แต่ทำได้จริงไม่เกิน ${r.forsus_plan2.protraction_max_mm} mm <b>เกินกว่านี้ฟันออกนอกกระดูกแน่นอน</b> → ปิด Overjet ไม่ครบ เหลือเกินเป้า ${n2(r.forsus_plan2.protraction_short_mm)} mm — ต้องแก้ส่วนที่เหลือด้วยถอนฟัน / TAD / ผ่าตัด (procline ไม่ติดเพดานนี้)</div>`);
   }
   if (r.root_torque_upper) warnBlocks.push(`<div class="alert">ฟันบนใช้ buccal root torque — ยืนยัน bony envelope ด้วย CBCT</div>`);
 

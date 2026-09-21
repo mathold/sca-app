@@ -342,7 +342,7 @@ function analyzeCase(inp) {
   const rootTorqueUpper = (torqueType === 'root') || classIiiPlanA;
 
   let lowerCappedImpa = false;
-  let protractionLower = 0.0;
+  let protractionLower = 0.0, protractionNeed = 0.0, protractionShort = 0.0;
   let ciii = null, planC = null;
   let up, low, overjetFinal;
 
@@ -374,7 +374,10 @@ function analyzeCase(inp) {
     const iiCur = (inp.interincisal_current !== null && inp.interincisal_current !== undefined)
       ? inp.interincisal_current : estimateInterincisalCurrent(inp.facc_to_fh, inp.l1_to_mpl_box);
     const ojAfterUpper = pyRound(inp.overjet_current + up.delta_overjet_mm, 2);
-    protractionLower = pyRound(Math.max(ojAfterUpper - 2.0, 0.0), 2);
+    protractionNeed = pyRound(Math.max(ojAfterUpper - 2.0, 0.0), 2);
+    // ดึงฟันล่างทั้งซี่มาหน้าได้ไม่เกิน protraction_max_mm (procline ไม่ติดเพดานนี้)
+    protractionLower = pyRound(Math.min(protractionNeed, ASSUMPTIONS.protraction_max_mm), 2);
+    protractionShort = pyRound(protractionNeed - protractionLower, 2);
     overjetFinal = pyRound(ojAfterUpper - protractionLower, 2);
     low = {
       interincisal_current: pyRound(iiCur, 2),
@@ -866,6 +869,10 @@ function analyzeCase(inp) {
     class_ii_forsus: classIiForsus,
     forsus_plan2: {
       protraction_lower_mm: pyRound(protractionLower, 2),
+      protraction_need_mm: pyRound(protractionNeed, 2),
+      protraction_short_mm: pyRound(protractionShort, 2),
+      protraction_capped: protractionShort > 0.01,
+      protraction_max_mm: ASSUMPTIONS.protraction_max_mm,
       distalize_upper_default_mm: ASSUMPTIONS.distalize_default_mm,
     },
   };
