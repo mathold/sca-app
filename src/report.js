@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.51';
+const APP_VERSION = '1.0.52';
 const APP_UPDATED = '22 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -217,24 +217,7 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>2 · ลำดับการคิด</h2>
-      <ol class="steps">
-        <li><b>ฟันบน — แก้ FACC ${n1(w.facc_current)}° → 0°</b><br>
-          ΔU1 ${n1(w.delta_u1)}° · สเปซ ${w.space_upper_torque >= 0 ? '+' : ''}${n2(w.space_upper_torque)} mm · ΔOJ ${n2(w.delta_oj_upper)} mm
-          ${r.root_torque_upper ? '<br><i>ใช้ buccal root torque — ไม่กินสเปซ ไม่เปลี่ยน OJ</i>' : ''}</li>
-        <li><b>ฟันล่าง — 1/1 ${n1(w.ii_after_upper)}° → ${n1(w.ii_goal ?? w.ii_target)}°</b>
-          ${w.ii_already_in_range ? '<span class="ok">อยู่ในช่วง 125–131° แล้ว ไม่ต้องขยับ</span>' : ''}<br>
-          ΔL1 ${w.delta_l1 >= 0 ? '+' : ''}${n1(w.delta_l1)}° · สเปซ ${w.space_lower_torque >= 0 ? '+' : ''}${n2(w.space_lower_torque)} mm ·
-          ΔOJ ${w.delta_oj_lower >= 0 ? '+' : ''}${n2(w.delta_oj_lower)} mm · ΔL1-APog ${n2(w.delta_l1apog_lower)} mm</li>
-        <li><b>L1-APog</b> หลัง torque ${n2(w.l1apog_current)} mm —
-          ${w.l1apog_in_range ? '<span class="ok">อยู่ในช่วง 1–3 mm แล้ว</span>' : `ต้องขยับ ${n2(w.l1apog_move)} mm เข้าหาขอบช่วง`}</li>
-        <li><b>A-P — Overjet ${n2(w.oj_after_torque)} mm → เป้า 2 mm</b><br>
-          retract รวม ${n2(w.retract_total)} mm (ฟันบน ${n2(w.retract_upper)} · ฟันล่าง ${n2(w.retract_lower)})</li>
-      </ol>
-    </section>
-
-    <section>
-      <h2>3 · งบพื้นที่และแผน</h2>
+      <h2>2 · งบพื้นที่และแผน</h2>
       ${gridKv('สรุปแผนแต่ละขากรรไกร', ['ขากรรไกร', 'แผน', 'ถอน', 'ตำแหน่งที่ถอน', 'วิธีเสริม', 'ผลงบพื้นที่'], [
         planSummaryRow(r.space_budget.upper, r.treatment_plan.upper, 'upper', 'ฟันบน'),
         planSummaryRow(r.space_budget.lower, r.treatment_plan.lower, 'lower', 'ฟันล่าง'),
@@ -244,14 +227,14 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>4 · แผนทางเลือก — ตารางดุลพื้นที่</h2>
+      <h2>3 · แผนทางเลือก — ตารางดุลพื้นที่</h2>
       <p class="note">ตัวเลขชุดเดียวกับที่กรอกลงฟอร์ม SCA จริง (ใช้สัมประสิทธิ์ของฟอร์ม)
         ทุกควอดรันต์สองฝั่งต้องเท่ากัน · <b>ส่งให้ดูครบทุกแผน ไม่เลือกให้</b></p>
       ${buildPlanSheets(r).map(planSheet).join('')}
     </section>
 
     <section>
-      <h2>5 · Canine และ Molar</h2>
+      <h2>4 · Canine และ Molar</h2>
       ${r.canine.available ? kv([
         ['Canine ขวา / ซ้าย', `${esc(r.canine.label_right)} / ${esc(r.canine.label_left)}`],
         ['ระยะ retract ฟันบน ขวา / ซ้าย', `${n2(r.canine.upper_retract_right)} / ${n2(r.canine.upper_retract_left)} mm`],
@@ -277,7 +260,7 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>6 · เมื่อจบการรักษา</h2>
+      <h2>5 · เมื่อจบการรักษา</h2>
       ${gridKv('ค่าเมื่อจบการรักษา', ['รายการ', 'ค่าที่จะจบ', 'เป้าหมาย', 'ผล'], [
         ['FACC to FH', n1(e.facc) + '°' + (e.facc_kept ? ' (เก็บไว้ — camouflage)' : ''), '0°',
           Math.abs(e.facc) <= 0.5 ? '<span class="ok">ถึงเป้า</span>' : '<span class="hot">ยังห่างเป้า</span>'],
@@ -302,7 +285,7 @@ function renderReport(r, extraWarnings = []) {
     </section>
 
     <section>
-      <h2>7 · ข้อพิจารณาอื่น</h2>
+      <h2>6 · ข้อพิจารณาอื่น</h2>
       ${forsusBlock}
       <p class="note"><b>Growth:</b> ${r.growth_appliance_advice.map(esc).join(' · ')}</p>
       <p class="note"><b>Soft tissue:</b> ${esc(r.eline_advice)}</p>
