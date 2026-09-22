@@ -10,9 +10,10 @@
  *   1 auto           — แผนที่ระบบแนะนำ
  *   2 ext_lower      — ถอนฟันล่าง 2 ซี่ ช่องที่เหลือกลายเป็น molar burn
  *   3 molar_class_i  — บังคับ molar จบ Class I (ค่าอุดมคติ ไว้ประกอบการตัดสินใจ)
+ *   4 canine_class_i — บังคับ canine จบ Class I (molar เป็นผลลัพธ์)
  */
 const C_TQ_UP = 0.32, C_TQ_LO = 0.24, C_BODILY = 0.941;
-const IPR_MAX = 6.0, AVG_PREMOLAR = 7.0;
+const IPR_MAX = 6.0, AVG_PREMOLAR = 7.0, MOLAR_MAX = 7.0;   // molar เดินมาหน้าได้ไม่เกิน 7 mm
 const r2 = (x) => Math.round(x * 100) / 100;
 
 function molarStartByQuad(result) {
@@ -27,12 +28,33 @@ function molarStartByQuad(result) {
   return out;
 }
 
+function canineNeedByQuad(result) {
+  const cq = result.canine || {};
+  if (!cq.available) return {};
+  const r = Number(cq.upper_right || 0), l = Number(cq.upper_left || 0);
+  return { Q1: r, Q4: r, Q2: l, Q3: l };
+}
+
 function buildOne(result, variant) {
   const w = result.working;
   const molarStart = variant === 'molar_class_i' ? molarStartByQuad(result) : {};
+  const canineNeed = variant === 'canine_class_i' ? canineNeedByQuad(result) : {};
   const lowerBurn = {};
   const quads = [];
-  const order = variant === 'molar_class_i' ? ['lower', 'upper'] : ['upper', 'lower'];
+  const lowerFirst = (variant === 'molar_class_i' || variant === 'canine_class_i');
+  const order = lowerFirst ? ['lower', 'upper'] : ['upper', 'lower'];
+
+  // ช่องที่ต้องปิดของ "ทุก" ควอดรันต์ ต้องรู้ครบก่อนเริ่ม เพราะแผนเขี้ยวเทียบบน-ล่างคู่กัน
+  const spaceClose = {};
+  for (const a of ['upper', 'lower']) {
+    const bb = result.space_budget[a];
+    for (const ss of bb.sides) {
+      const forced = (variant !== 'auto') && a === 'lower' && ss.can_extract;
+      const wmm = (ss.extract_here || forced) ? (bb.per_side_ext || AVG_PREMOLAR) : 0;
+      spaceClose[ss.quad] = r2((ss.spacing || 0) + wmm);
+    }
+  }
+  const PAIR = { Q1: 'Q4', Q4: 'Q1', Q2: 'Q3', Q3: 'Q2' };
 
   for (const arch of order) {
     const b = result.space_budget[arch];
@@ -74,7 +96,17 @@ function buildOne(result, variant) {
 
       let burn = 0;   // molar เลื่อนมาหน้า -> ฝั่ง - (ใช้พื้นที่)
       let dist = 0;   // distalize molar    -> ฝั่ง + (ได้พื้นที่)
-      if (variant === 'molar_class_i' && up && molarStart[s.quad] !== undefined) {
+      if (variant === 'canine_class_i' && canineNeed[s.quad] !== undefined) {
+        // เขี้ยวเดิน = ช่องที่ต้องปิด - molar เดินมาหน้า
+        // ต้องการ (Su - Mu) - (Sl - Ml) = need  ->  Ml - Mu = need - Su + Sl
+        const pair = PAIR[s.quad];
+        const su = spaceClose[up ? s.quad : pair] || 0;
+        const sl = spaceClose[up ? pair : s.quad] || 0;
+        const diff = r2(canineNeed[s.quad] - su + sl);
+        const want = up ? Math.max(0, Math.min(MOLAR_MAX, -diff))
+                        : Math.max(0, Math.min(MOLAR_MAX, diff));
+        if (want > 0.01) burn = want;
+      } else if (variant === 'molar_class_i' && up && molarStart[s.quad] !== undefined) {
         const needUp = r2((lowerBurn[s.quad] || 0) - molarStart[s.quad]);
         if (needUp > 0.01) burn = needUp;
         else if (needUp < -0.01) dist = -needUp;
@@ -129,6 +161,11 @@ export function buildPlanSheets(result) {
     plans.push({ key: 'molar_class_i', title: 'แผน 3 — molar จบ Class I (ค่าอุดมคติ)',
                  note: 'คุมให้ burn ล่าง − burn บน = ระยะ Class II เริ่มต้น · '
                      + 'ในทางปฏิบัติอาจทำไม่ได้ทุกเคส — ไว้ประกอบการตัดสินใจ' });
+  }
+  if ((result.canine || {}).available) {
+    plans.push({ key: 'canine_class_i',
+                 title: 'แผน ' + (plans.length + 1) + ' — canine จบ Class I (บังคับ)',
+                 note: 'เขี้ยวเป็นเป้าหมายบังคับ · molar เป็นผลลัพธ์ที่ตามมา' });
   }
   return plans.map((p, i) => ({ ...p, no: i + 1, quads: buildOne(result, p.key) }));
 }
