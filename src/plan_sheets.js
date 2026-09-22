@@ -42,7 +42,9 @@ function buildOne(result, variant) {
     const tqSpace = Math.abs(tqDeg) * (up ? C_TQ_UP : C_TQ_LO) / 2;
     const bodilySpace = up ? Math.abs(bodily) * C_BODILY : Math.abs(bodily) * C_BODILY / 2;
     const expSide = (b.expansion_gain || 0) / 2;
-    const cosSide = (b.cos || 0) / 2;
+    // b.cos เป็นค่า "ต่อข้าง" (cos_effective/2) อยู่แล้ว ตรงกับที่ฟอร์มคิดในแถว 107
+    // ห้ามหาร 2 ซ้ำ — เคยทำให้ควอดรันต์ล่างขาดข้างละ COS/4 ทุกแผน
+    const cosSide = b.cos || 0;
     let iprLeft = IPR_MAX;
 
     for (const s of b.sides) {
@@ -70,21 +72,36 @@ function buildOne(result, variant) {
         supply += ext;
       }
 
-      let gap = r2(demand - supply), burn = 0;
+      let burn = 0;   // molar เลื่อนมาหน้า -> ฝั่ง - (ใช้พื้นที่)
+      let dist = 0;   // distalize molar    -> ฝั่ง + (ได้พื้นที่)
       if (variant === 'molar_class_i' && up && molarStart[s.quad] !== undefined) {
         const needUp = r2((lowerBurn[s.quad] || 0) - molarStart[s.quad]);
-        if (needUp > 0.01) { burn = needUp; add(minus, 'molar บนเลื่อนมาหน้า', burn); gap = r2(gap + burn); }
-        else if (needUp < -0.01) { add(plus, 'distalize molar บน', -needUp); gap = r2(gap + needUp); }
-        if (gap > 0.01) { const ipr = r2(Math.min(gap, iprLeft)); add(plus, 'IPR', ipr); iprLeft = r2(iprLeft - ipr); }
-      } else if (gap > 0.01) {
-        const ipr = r2(Math.min(gap, iprLeft));
-        add(plus, 'IPR', ipr); iprLeft = r2(iprLeft - ipr);
-        const rest = r2(gap - ipr);
-        if (rest > 0.01) add(plus, 'distalize molar', rest);
-      } else if (gap < -0.01) {
-        burn = r2(-gap);
-        add(minus, 'molar เลื่อนมาปิดช่อง', burn);
+        if (needUp > 0.01) burn = needUp;
+        else if (needUp < -0.01) dist = -needUp;
       }
+
+      // ---- ปิดส่วนต่างให้ดุลเสมอ (กติกาคุณหมอ 22 ก.ย. 2569) ----
+      // ฝั่ง + กับฝั่ง - ต้องเท่ากันทุกควอดรันต์ ไม่ว่าแผนไหน ขั้นนี้จึงใช้ร่วมกันทุก variant
+      // เดิมสาขา molar_class_i ไม่มี จึงเหลือ/ขาดค้างไว้ไม่ดุล
+      let gap = r2(demand + burn - supply - dist);
+      let ipr = 0;
+      if (gap > 0.01) {
+        ipr = r2(Math.min(gap, Math.max(iprLeft, 0)));
+        iprLeft = r2(iprLeft - ipr);
+        const rest = r2(gap - ipr);
+        if (rest > 0.01) {
+          if (burn > 0.01) ipr = r2(ipr + rest);   // distalize ขัดกับ mesialize ซี่เดียวกัน
+          else dist = r2(dist + rest);
+        }
+      } else if (gap < -0.01) {
+        burn = r2(burn - gap);
+      }
+      // mesialize กับ distalize ซี่เดียวกันพร้อมกันไม่ได้ -> หักกลบก่อนแสดง
+      const net = r2(burn - dist);
+      if (net > 0) { burn = net; dist = 0; } else { burn = 0; dist = -net; }
+      if (ipr > 0.01) add(plus, 'IPR', ipr);
+      if (dist > 0.01) add(plus, 'distalize molar', dist);
+      if (burn > 0.01) add(minus, 'molar เลื่อนมาปิดช่อง', burn);
       if (!up) lowerBurn[s.quad === 'Q3' ? 'Q2' : 'Q1'] = burn;
 
       const sum = (a) => r2(a.reduce((t, x) => t + x.mm, 0));

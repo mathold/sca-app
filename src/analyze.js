@@ -456,7 +456,10 @@ function analyzeCase(inp) {
       interincisal_current: pyRound(iiCur, 2),
       interincisal_was_estimated: (inp.interincisal_current === null || inp.interincisal_current === undefined),
       interincisal_interim_after_upper: pyRound(iiCur, 2),
-      delta_l1: nz(-retroDegUsed),
+      // เครื่องหมายต้องตรงกับกติกากลาง (ortho_calc.js บรรทัด 235): "+ = retrocline (upright)"
+      // เดิมเขียน -retroDegUsed โดยนิยามกลับด้าน -> ปลายทางอ่านผิดเป็น "procline":
+      // interincisal จบหักลบแทนที่จะบวก และตารางแดงกรอกลงคอลัมน์ Pro แทน Re
+      delta_l1: nz(retroDegUsed),
       // retrocline กินพื้นที่เหมือน Class I/II (18 ก.ย. 2569)
       space_lower_torque_mm: pyRound((retroDegUsed / 5.0) * 1.2, 2),
       delta_overjet_mm: pyRound(dOjRetro, 2),
@@ -876,6 +879,16 @@ function analyzeCase(inp) {
       distalize_upper_default_mm: ASSUMPTIONS.distalize_default_mm,
     },
   };
+
+  // --- Diagnosis: ให้แอพแสดงเหมือนรายงาน PDF (คุณหมอสั่ง 22 ก.ย. 2569) ---
+  // ใช้ autoDiagnosis ชุดเดียวกับ Python แล้วต่อท้ายด้วยสรุปหัวข้อ 1 (McNamara)
+  // เฉพาะเมื่อมีค่า Co-A/Co-Gn — ตรงกับที่ generate_report.py ทำ
+  let dx = (inp.diagnosis && String(inp.diagnosis).trim()) || autoDiagnosis(inp);
+  if (mcn && mcn.available) {
+    const refLine = 'McNamara: ' + mcn.summary + ' (ref = ' + mcn.ref_label + ')';
+    dx = dx ? (dx + ' · ' + refLine) : refLine;
+  }
+  result.diagnosis = dx;
 
   return result;
 }

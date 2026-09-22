@@ -3,7 +3,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.47';
+const APP_VERSION = '1.0.49';
 const APP_UPDATED = '22 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -187,6 +187,8 @@ function renderReport(r, extraWarnings = []) {
         <div class="v-ext">${esc(extText)}</div>
       </div>
     </header>
+
+    ${r.diagnosis ? `<div class="dx"><span class="dx-label">Diagnosis</span>${esc(r.diagnosis)}</div>` : ''}
 
     ${warnBlocks.join('')}
 
