@@ -67,6 +67,11 @@ function buildOne(result, variant) {
     // b.cos เป็นค่า "ต่อข้าง" (cos_effective/2) อยู่แล้ว ตรงกับที่ฟอร์มคิดในแถว 107
     // ห้ามหาร 2 ซ้ำ — เคยทำให้ควอดรันต์ล่างขาดข้างละ COS/4 ทุกแผน
     const cosSide = b.cos || 0;
+    // midline: ฟอร์มใส่ "ไขว้ข้าง" (แถว 108) — ฝั่ง + ได้ของควอดรันต์ตัวเอง
+    // ฝั่ง - ได้ของควอดรันต์ตรงข้ามในอาร์ชเดียวกัน
+    const mid = {};
+    for (const ss of b.sides) mid[ss.quad] = ss.midline || 0;
+    const MPART = { Q1: 'Q2', Q2: 'Q1', Q3: 'Q4', Q4: 'Q3' };
     let iprLeft = IPR_MAX;
 
     for (const s of b.sides) {
@@ -74,7 +79,8 @@ function buildOne(result, variant) {
       const add = (arr, label, mm) => { if (mm > 0.005) arr.push({ label, mm: r2(mm) }); };
 
       add(minus, 'เก (crowding)', s.crowding);
-      add(minus, 'midline', s.midline);
+      add(minus, 'midline', mid[MPART[s.quad]] || 0);
+      add(plus, 'midline', mid[s.quad] || 0);
       if (!up) add(minus, 'COS ÷ 2', cosSide);
       if (tqDeg > 0) add(minus, 'มุมฟัน ' + r2(Math.abs(tqDeg)) + '°', tqSpace);
       else add(plus, 'มุมฟัน ' + r2(Math.abs(tqDeg)) + '° (procline)', tqSpace);
@@ -84,9 +90,9 @@ function buildOne(result, variant) {
       add(plus, 'ขยาย arch', expSide);
 
       const forceExt = (variant !== 'auto') && !up && s.can_extract;
-      let supply = (s.spacing || 0) + expSide + (tqDeg < 0 ? tqSpace : 0)
+      let supply = (s.spacing || 0) + expSide + (mid[s.quad] || 0) + (tqDeg < 0 ? tqSpace : 0)
                  + (bodily < 0 ? bodilySpace : 0);
-      const demand = (s.crowding || 0) + (s.midline || 0) + (up ? 0 : cosSide)
+      const demand = (s.crowding || 0) + (mid[MPART[s.quad]] || 0) + (up ? 0 : cosSide)
                    + (tqDeg > 0 ? tqSpace : 0) + (bodily > 0 ? bodilySpace : 0);
       if (s.extract_here || forceExt) {
         const ext = b.per_side_ext || AVG_PREMOLAR;
