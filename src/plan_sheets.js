@@ -6,11 +6,8 @@
  *   torque:  บน (deg*0.32)/2   ล่าง (deg*0.24)/2
  *   bodily:  ดึงฟันบน mm*0.941 (ฟอร์มไม่หาร 2) · ที่เหลือ (mm*0.941)/2
  *
- * 3 แผน (ตัดสินใจคุณหมอ 21 ก.ย. 2569):
- *   1 auto           — แผนที่ระบบแนะนำ
- *   2 ext_lower      — ถอนฟันล่าง 2 ซี่ ช่องที่เหลือกลายเป็น molar burn
- *   (molar_class_i — ไม่ออกอัตโนมัติแล้ว 23 ก.ย. 2569 · buildOne ยังรองรับ)
- *   4 canine_class_i — บังคับ canine จบ Class I (molar เป็นผลลัพธ์)
+ * ออกแผนเดียว = auto (แผนที่ระบบแนะนำ) — คุณหมอ 23 ก.ย. 2569
+ *   (ext_lower / molar_class_i / canine_class_i เลิกออกแล้ว · buildOne ยังรองรับ)
  */
 const C_TQ_UP = 0.32, C_TQ_LO = 0.24, C_BODILY = 0.941;
 const C_OJ_UP = 0.34;   // S98: OJ เปลี่ยน (U92 − W92) × 0.34 ต่อองศาฟันบน
@@ -160,21 +157,12 @@ function buildOne(result, variant) {
 }
 
 export function buildPlanSheets(result) {
+  // กติกาคุณหมอ 23 ก.ย. 2569: เหลือแค่ "แผนหมอ + แผนที่ระบบแนะนำ" —
+  // เลิกออกแผนถอนล่าง 2 ซี่ / molar Class I / canine Class I (buildOne ยังรองรับทุก variant)
   const bl = result.space_budget.lower;
-  const lowerCanExt = (bl.sides || []).some((s) => s.can_extract);
   const plans = [{
-    key: 'auto', title: 'แผน 1 — แผนที่ระบบแนะนำ',
+    key: 'auto', title: 'แผนที่ระบบแนะนำ',
     note: result.space_budget.upper.plan_label + ' / ' + bl.plan_label,
   }];
-  if (!bl.is_ext_plan && lowerCanExt) {
-    plans.push({ key: 'ext_lower', title: 'แผน 2 — ถอนฟันล่าง 2 ซี่',
-                 note: 'ช่องที่เหลือกลายเป็น molar burn — ใช้ดึง molar มาหน้าแก้ Class II' });
-  }
-  // แผน molar Class I เอาออกแล้ว (คุณหมอ 23 ก.ย. 2569 — ไม่ได้ใช้) · buildOne ยังรองรับ variant นี้
-  if ((result.canine || {}).available) {
-    plans.push({ key: 'canine_class_i',
-                 title: 'แผน ' + (plans.length + 1) + ' — canine จบ Class I (บังคับ)',
-                 note: 'เขี้ยวเป็นเป้าหมายบังคับ · molar เป็นผลลัพธ์ที่ตามมา' });
-  }
   return plans.map((p, i) => ({ ...p, no: i + 1, quads: buildOne(result, p.key) }));
 }
