@@ -15,7 +15,7 @@
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.54';
+const APP_VERSION = '1.0.55';
 const APP_UPDATED = '23 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
@@ -252,6 +252,7 @@ function renderReport(r, extraWarnings = []) {
         ['ระยะ retract ฟันบน ขวา / ซ้าย', `${n2(r.canine.upper_retract_right)} / ${n2(r.canine.upper_retract_left)} mm`],
         ['ระยะ retract ฟันล่าง ขวา / ซ้าย', `${n2(r.canine.lower_retract_right)} / ${n2(r.canine.lower_retract_left)} mm`],
         r.canine.skipped_reason ? ['หมายเหตุ', esc(r.canine.skipped_reason)] : null,
+        r.canine.oj_first ? ['canine จบ', `<b class="hot">เหลือ ขวา ${n1(r.canine.residual_right)} / ซ้าย ${n1(r.canine.residual_left)} mm</b> (ยอมรับ — OJ = 2 มาก่อน)`] : null,
       ]) : '<p class="note">ไม่มีข้อมูล Canine relationship ในฟอร์ม</p>'}
       ${r.canine.detail && r.canine.detail.length ? `<ul class="plain">${r.canine.detail.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
       ${r.canine_plan && r.canine_plan.available ? `<table class="grid">

@@ -164,6 +164,7 @@ const CASE_DEFAULTS = {
   tooth_size_discrepancy_upper: 0.0, tooth_size_discrepancy_lower: 0.0,
   overjet_current: 0.0, overbite_current: 0.0,
   molar_target: 'follow',
+  canine_target: 'class_i',   // 'class_i' | 'oj_first' (OJ = 2 มาก่อน canine)
   arch_width_data_available: false,
   wits: null, u1_sn: null, u1_pp: null,
   fh_to_fop: null, y_axis: null, u1_to_na: null, sn_to_ppl: null,

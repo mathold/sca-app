@@ -601,7 +601,9 @@ function analyzeCase(inp) {
 
   // ---- Canine ----
   const canReq = canineRequirement(inp.canine_relationship);
-  const canineApplies = !(classIiForsus || ciiiFacc);
+  // canine_target = 'oj_first' -> OJ = 2 มาก่อน canine ขยับเท่าที่ฟันหน้าถอยจริง (คุณหมอ 23 ก.ย. 2569)
+  const canineOjFirst = String(inp.canine_target || 'class_i').toLowerCase() === 'oj_first';
+  const canineApplies = !(classIiForsus || ciiiFacc || canineOjFirst);
   let upperApRight, upperApLeft, lowerApRight, lowerApLeft;
   if (canineApplies && canReq.available) {
     upperApRight = pyRound(Math.max(upperAp, canReq.upper_right), 2);
@@ -615,6 +617,7 @@ function analyzeCase(inp) {
   canReq.applies = !!(canineApplies && canReq.available);
   canReq.skipped_reason = canineApplies ? null
     : (classIiForsus ? 'แผน Forsus: Class II แก้ด้วยการดันขากรรไกรล่างมาหน้า ไม่ได้ใช้ช่องถอน'
+      : (canineOjFirst && !ciiiFacc) ? 'คุณหมอเลือก OJ = 2 ก่อน (canine_target = oj_first): canine ขยับเท่าที่ฟันหน้าถอยจริง'
       : 'แผน C (Class III & FACC): ช่องล่างถูกใช้สร้าง OJ ให้ฟันบนอยู่แล้ว');
   canReq.oj_retract_side = pyRound(upperAp, 2);
   canReq.upper_retract_right = upperApRight;
@@ -694,6 +697,14 @@ function analyzeCase(inp) {
 
   // ---- OJ ที่ทำนายว่าจะจบจริง (คุณหมอ 23 ก.ย. 2569: รายงานต้องโชว์ค่านี้ ไม่ใช่เป้า 2) ----
   // Class I/II (+ Plan A): OJ หลัง torque + ดึงล่างถอย − ดึงบนถอย · Class III/Forsus: ค่าจบของโหมด
+  // canine_target = oj_first -> canine ที่ยังเหลือหลังฟันหน้าถอยเท่าที่ OJ ยอมให้
+  canReq.oj_first = !!(canineOjFirst && canReq.available && !(classIiForsus || ciiiFacc));
+  if (canReq.oj_first) {
+    canReq.residual_right = pyRound(Math.max(canReq.upper_right - upperApRight, 0)
+                                    + Math.max(canReq.lower_right - lowerApRight, 0), 2);
+    canReq.residual_left = pyRound(Math.max(canReq.upper_left - upperApLeft, 0)
+                                   + Math.max(canReq.lower_left - lowerApLeft, 0), 2);
+  }
   const overjetEnd = (classIii || classIiForsus) ? overjetFinal
     : pyRound(overjetFinal + Math.max(lowerApRight, lowerApLeft)
               - Math.max(upperApRight, upperApLeft), 2);
