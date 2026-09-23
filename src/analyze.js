@@ -692,6 +692,12 @@ function analyzeCase(inp) {
     }
   }
 
+  // ---- OJ ที่ทำนายว่าจะจบจริง (คุณหมอ 23 ก.ย. 2569: รายงานต้องโชว์ค่านี้ ไม่ใช่เป้า 2) ----
+  // Class I/II (+ Plan A): OJ หลัง torque + ดึงล่างถอย − ดึงบนถอย · Class III/Forsus: ค่าจบของโหมด
+  const overjetEnd = (classIii || classIiForsus) ? overjetFinal
+    : pyRound(overjetFinal + Math.max(lowerApRight, lowerApLeft)
+              - Math.max(upperApRight, upperApLeft), 2);
+
   // ---- ตัดสินแผน (เกณฑ์เดียว: พื้นที่ที่ยังขาด) ----
   const planUpper = spaceManagementDecision(budgetUpper.remaining, l1ApogFinal, totalUpperAfterExp);
   const planLower = spaceManagementDecision(budgetLower.remaining, l1ApogFinal, totalLowerAfterExp);
@@ -855,8 +861,11 @@ function analyzeCase(inp) {
       interincisal_in_range: (ASSUMPTIONS.interincisal_range_low <= interincisalEnd
         && interincisalEnd <= ASSUMPTIONS.interincisal_range_high),
       interincisal_capped: lowerCappedImpa,
-      overjet: 2.0,
-      overjet_ortho_phase: overjetFinal,
+      // ค่าที่โชว์ = OJ ที่ทำนายว่าจะจบจริง · เคสผ่าตัดจบที่เป้าหลังผ่า
+      overjet: needsSurgery ? 2.0 : overjetEnd,
+      overjet_target: 2.0,
+      overjet_ortho_phase: overjetEnd,
+      overjet_off_target: !needsSurgery && Math.abs(overjetEnd - 2.0) > 0.5,
       needs_surgery: needsSurgery,
       // ด่าน IPR สั่งไม่ให้ดึงเพิ่ม -> ค่าที่จะจบคือค่าหลัง torque ตามจริง
       l1_apog: (l1ApogInRange || l1apogRetractSkipped) ? pyRound(l1ApogFinal, 1) : l1ApogTarget,

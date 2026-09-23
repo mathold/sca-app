@@ -13,6 +13,11 @@
  *   4 canine_class_i — บังคับ canine จบ Class I (molar เป็นผลลัพธ์)
  */
 const C_TQ_UP = 0.32, C_TQ_LO = 0.24, C_BODILY = 0.941;
+const C_OJ_UP = 0.34;   // S98: OJ เปลี่ยน (U92 − W92) × 0.34 ต่อองศาฟันบน
+// buccal root torque ฟันบน: ฟอร์มไม่มีช่อง -> มุม Re + ดันหน้า mm = องศา×0.34 (คง OJ)
+// พื้นที่ดุลกันเอง deg×0.32/2 = (deg×0.34)×0.941/2 · ตรงกับ fill_sca_plan.root_comp_mm
+const rootCompMm = (result) => result.root_torque_upper
+  ? r2(Number(result.working.delta_u1 || 0) * C_OJ_UP) : 0;
 const IPR_MAX = 6.0, AVG_PREMOLAR = 7.0, MOLAR_MAX = 7.0;   // molar เดินมาหน้าได้ไม่เกิน 7 mm
 const r2 = (x) => Math.round(x * 100) / 100;
 
@@ -86,12 +91,14 @@ function buildOne(result, variant) {
       else add(plus, 'มุมฟัน ' + r2(Math.abs(tqDeg)) + '° (procline)', tqSpace);
       if (bodily > 0) add(minus, 'ดึงฟันหน้า ' + r2(Math.abs(bodily)) + ' mm', bodilySpace);
       else add(plus, 'ยื่นฟันหน้า ' + r2(Math.abs(bodily)) + ' mm', bodilySpace);
+      const rootSupply = up ? Math.abs(rootCompMm(result)) * C_BODILY / 2 : 0;
+      add(plus, 'root torque (ดันหน้าชดเชย ' + r2(Math.abs(rootCompMm(result))) + ' mm)', rootSupply);
       add(plus, 'ช่องว่างเดิม', s.spacing);
       add(plus, 'ขยาย arch', expSide);
 
       const forceExt = (variant !== 'auto') && !up && s.can_extract;
       let supply = (s.spacing || 0) + expSide + (mid[s.quad] || 0) + (tqDeg < 0 ? tqSpace : 0)
-                 + (bodily < 0 ? bodilySpace : 0);
+                 + (bodily < 0 ? bodilySpace : 0) + rootSupply;
       const demand = (s.crowding || 0) + (mid[MPART[s.quad]] || 0) + (up ? 0 : cosSide)
                    + (tqDeg > 0 ? tqSpace : 0) + (bodily > 0 ? bodilySpace : 0);
       if (s.extract_here || forceExt) {

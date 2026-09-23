@@ -1,10 +1,22 @@
+        // e.overjet = OJ ที่ทำนายว่าจะจบจริง (รวม retract บน/ล่าง และ canine ที่คุมแผนแล้ว)
+        ['Overjet', e.needs_surgery
+            ? `<b class="hot">${n2(e.overjet_ortho_phase)} mm</b> <span class="muted">(จบเฟสจัดฟัน — ที่เหลือปิดด้วยผ่าตัด)</span>`
+            : `${e.overjet_off_target ? `<b class="hot">${n1(e.overjet)} mm</b>` : n1(e.overjet) + ' mm'}<br><span class="muted">หลัง torque ${n2(w.oj_after_torque)} mm → retract บน ${n2(Math.max(r.canine.upper_retract_right ?? w.retract_upper, r.canine.upper_retract_left ?? w.retract_upper))} · ล่าง ${n2(Math.max(r.canine.lower_retract_right ?? w.retract_lower, r.canine.lower_retract_left ?? w.retract_lower))} mm</span>`,
+          '2 mm',
+          e.needs_surgery ? '<span class="hot">ต้องผ่าตัดร่วม</span>'
+            : !e.overjet_off_target ? '<span class="ok">ถึงเป้า</span>'
+            : (e.overjet < 2 && r.canine.canine_drives_by_mm > 0)
+              ? `<span class="hot">ต่ำกว่าเป้า — เขี้ยว Class II ดึงบนเกิน OJ ${n2(r.canine.canine_drives_by_mm)} mm</span>`
+            : (e.overjet < 2 && !r.root_torque_upper)
+              ? '<span class="hot">ต่ำกว่าเป้า — torque บนกิน OJ (ลอง buccal root torque)</span>'
+            : `<span class="hot">${e.overjet < 2 ? 'ต่ำกว่า' : 'เกิน'}เป้า</span>`],
 /* report.js — สร้าง HTML รายงานจากผลของ analyzeCase() */
 
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.53';
-const APP_UPDATED = '22 ก.ย. 2569';
+const APP_VERSION = '1.0.54';
+const APP_UPDATED = '23 ก.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
