@@ -9,7 +9,7 @@
  * 3 แผน (ตัดสินใจคุณหมอ 21 ก.ย. 2569):
  *   1 auto           — แผนที่ระบบแนะนำ
  *   2 ext_lower      — ถอนฟันล่าง 2 ซี่ ช่องที่เหลือกลายเป็น molar burn
- *   3 molar_class_i  — บังคับ molar จบ Class I (ค่าอุดมคติ ไว้ประกอบการตัดสินใจ)
+ *   (molar_class_i — ไม่ออกอัตโนมัติแล้ว 23 ก.ย. 2569 · buildOne ยังรองรับ)
  *   4 canine_class_i — บังคับ canine จบ Class I (molar เป็นผลลัพธ์)
  */
 const C_TQ_UP = 0.32, C_TQ_LO = 0.24, C_BODILY = 0.941;
@@ -170,11 +170,7 @@ export function buildPlanSheets(result) {
     plans.push({ key: 'ext_lower', title: 'แผน 2 — ถอนฟันล่าง 2 ซี่',
                  note: 'ช่องที่เหลือกลายเป็น molar burn — ใช้ดึง molar มาหน้าแก้ Class II' });
   }
-  if ((result.molar_finish || {}).available) {
-    plans.push({ key: 'molar_class_i', title: 'แผน 3 — molar จบ Class I (ค่าอุดมคติ)',
-                 note: 'คุมให้ burn ล่าง − burn บน = ระยะ Class II เริ่มต้น · '
-                     + 'ในทางปฏิบัติอาจทำไม่ได้ทุกเคส — ไว้ประกอบการตัดสินใจ' });
-  }
+  // แผน molar Class I เอาออกแล้ว (คุณหมอ 23 ก.ย. 2569 — ไม่ได้ใช้) · buildOne ยังรองรับ variant นี้
   if ((result.canine || {}).available) {
     plans.push({ key: 'canine_class_i',
                  title: 'แผน ' + (plans.length + 1) + ' — canine จบ Class I (บังคับ)',
