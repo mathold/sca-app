@@ -73,8 +73,9 @@ function stats_() {
                     m1: 0, m1_opens: 0, m3: 0, m3_opens: 0,
                     m6: 0, m6_opens: 0, y1: 0, y1_opens: 0,
                     gate_ok: 0, gate_fail: 0, gate_users: 0,
-                    xlsx: 0, calc: 0, calc_users: 0 };
-    u[a] = { all: {}, today: {}, d7: {}, m1: {}, m3: {}, m6: {}, y1: {}, gate: {}, calc: {} };
+                    xlsx: 0, calc: 0, calc_users: 0,
+                    dl: 0, dl_m1: 0, dl_users: 0 };
+    u[a] = { all: {}, today: {}, d7: {}, m1: {}, m3: {}, m6: {}, y1: {}, gate: {}, calc: {}, dl: {} };
   });
   var perDay = {};
 
@@ -112,6 +113,12 @@ function stats_() {
     if (ev === 'gate' && detail === 'ok') { o.gate_ok++; if (sid) uu.gate[sid] = 1; }
     if (ev === 'gate' && detail === 'fail') o.gate_fail++;
     if (ev === 'xlsx') o.xlsx++;
+    // ดาวน์โหลดตาราง SCA จาก Ceph Protractor — ส่งเป็น event 'open' detail 'xlsx'
+    if (ev === 'open' && detail === 'xlsx') {
+      o.dl++;
+      if (day >= d30) o.dl_m1++;
+      if (sid) uu.dl[sid] = 1;
+    }
     if (ev === 'calc') { o.calc++; if (sid) uu.calc[sid] = 1; }
     if (day >= d30) {
       if (!perDay[day]) {
@@ -133,6 +140,7 @@ function stats_() {
     o.y1 = Object.keys(uu.y1).length;
     o.gate_users = Object.keys(uu.gate).length;
     o.calc_users = Object.keys(uu.calc).length;
+    o.dl_users = Object.keys(uu.dl).length;
   });
 
   out.devices = Object.keys(dev).map(function (k) { if (names[k]) dev[k].name = names[k]; return dev[k]; })
@@ -189,6 +197,8 @@ function setup() {
   var LAST180= ',' + L + 'B2:B,">="&TEXT(TODAY()-179,"yyyy-mm-dd")';
   var LAST365= ',' + L + 'B2:B,">="&TEXT(TODAY()-364,"yyyy-mm-dd")';
   var OPEN   = ',' + L + 'D2:D,"open"';
+  // ดาวน์โหลดตาราง SCA = event 'open' + detail 'xlsx' (ยิงจากปุ่มดาวน์โหลดใน Ceph Protractor)
+  var DL     = ',' + L + 'D2:D,"open",' + L + 'E2:E,"xlsx"';
 
   row('สถิติการใช้งาน — SCA App · Ceph Protractor · กราฟหุ้นไทย');
   row('อัปเดตอัตโนมัติทุกครั้งที่เปิดชีต');
@@ -222,6 +232,13 @@ function setup() {
   row('อัปโหลดไฟล์ xlsx (เฉพาะ SCA)', cnt('sca', ',' + L + 'D2:D,"xlsx"'));
   row('คำนวณแผนสำเร็จ (เฉพาะ SCA)', cnt('sca', ',' + L + 'D2:D,"calc"'));
   row('คนที่เคยคำนวณจริง (เฉพาะ SCA)', uniq('sca', ',' + L + 'D2:D,"calc"'));
+  row('');
+  row('ดาวน์โหลดตาราง SCA (เฉพาะ Ceph Protractor)');
+  row('ดาวน์โหลดทั้งหมด (ครั้ง)', '', cnt('ceph', DL));
+  row('30 วันล่าสุด', '', cnt('ceph', DL + LAST30));
+  row('3 เดือนล่าสุด', '', cnt('ceph', DL + LAST90));
+  row('1 ปีล่าสุด', '', cnt('ceph', DL + LAST365));
+  row('คนที่เคยดาวน์โหลด (ไม่ซ้ำ)', '', uniq('ceph', DL));
   row('');
   row('รายวัน (ใหม่สุดอยู่บน)');
   row('วันที่', 'SCA — เครื่องไม่ซ้ำ', 'Ceph — เครื่องไม่ซ้ำ', 'หุ้น — เครื่องไม่ซ้ำ');
