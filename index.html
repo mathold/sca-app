@@ -293,6 +293,13 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 .sx .lines>div[contenteditable]{border-bottom:1px solid #bbb;padding:.4mm 0;min-height:5.5mm}
 .sx ul[contenteditable]{margin:.5mm 0 0 0;padding-left:4mm;min-height:5mm}
 .sx .foot{display:flex;justify-content:space-between;font-size:8.5pt;margin-top:1.5mm}
+/* พิมพ์ใบ Summary: พิมพ์ภาพ A4 ชุดเดียวกับ JPEG เต็มหน้ากระดาษ ซ่อนส่วนอื่นทั้งหมด */
+#sx-print{display:none}
+@media print{
+  body.print-summary>*:not(#sx-print){display:none !important}
+  body.print-summary #sx-print{display:block}
+  #sx-print img{display:block;width:182mm;height:auto;margin:0 auto}
+}
 </style>
 </head>
 <body>
@@ -372,6 +379,7 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
     <button type="button" class="ghost" id="back">← กลับไปแก้ค่า</button>
     <button type="button" class="primary" id="print">บันทึกเป็น PDF / พิมพ์</button>
     <button type="button" class="primary" id="save-jpeg" hidden>💾 บันทึกเป็น JPEG</button>
+    <button type="button" class="primary" id="print-summary" hidden>🖨 พิมพ์ A4</button>
     <button type="button" class="ghost" id="reset-summary" hidden>↺ กลับค่าเดิม</button>
   </div>
   <div id="pane-summary" class="noprint" hidden>
@@ -839,6 +847,7 @@ function showTab(which) {
   document.getElementById('pane-summary').hidden = !sum;
   document.getElementById('print').hidden = sum;
   document.getElementById('save-jpeg').hidden = !sum;
+  document.getElementById('print-summary').hidden = !sum;
   document.getElementById('reset-summary').hidden = !sum;
 }
 document.getElementById('tab-report').addEventListener('click', () => showTab('report'));
@@ -848,23 +857,31 @@ document.getElementById('reset-summary').addEventListener('click', () => {
   try { localStorage.removeItem(sxKey()); } catch {}
   sxSheet.innerHTML = lastSummary.html; bindBoxes();
 });
-document.getElementById('save-jpeg').addEventListener('click', async () => {
-  if (!lastSummary) return;
-  if (typeof html2canvas !== 'function') { alert('โหลดตัวสร้างภาพไม่สำเร็จ — ลองเปิดหน้าใหม่ขณะออนไลน์'); return; }
+// เรนเดอร์ใบเป็นภาพ A4 พอดี 1654×2339 (200 dpi) — ข้อความยาวเกินหน้าเล็กน้อยจะถูกย่อลงให้พอดีหน้า
+async function summaryPage() {
+  if (typeof html2canvas !== 'function') throw new Error('โหลดตัวสร้างภาพไม่สำเร็จ — ลองเปิดหน้าใหม่ขณะออนไลน์');
   if (document.activeElement) document.activeElement.blur();
-  const { inp } = lastSummary;
-  const stem = [inp.dn, (inp.patient_name || '').trim().replace(/\s+/g, '_')].filter(Boolean).join('_')
-    .replace(/[\/\\:*?"<>|]/g, '') || 'SCA';
   sxSheet.classList.add('exporting');
   try {
     const canvas = await html2canvas(sxSheet, { scale: 1654 / sxSheet.offsetWidth, backgroundColor: '#ffffff', useCORS: true });
-    // วางลงหน้า A4 พอดี 1654×2339 (200 dpi) — ข้อความยาวเกินหน้าเล็กน้อยจะถูกย่อลงให้พอดีหน้า
     const page = document.createElement('canvas');
     page.width = 1654; page.height = 2339;
     const ctx = page.getContext('2d');
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, page.width, page.height);
     const k = Math.min(1, page.height / canvas.height);
     ctx.drawImage(canvas, (page.width - canvas.width * k) / 2, 0, canvas.width * k, canvas.height * k);
+    return page;
+  } finally {
+    sxSheet.classList.remove('exporting');
+  }
+}
+document.getElementById('save-jpeg').addEventListener('click', async () => {
+  if (!lastSummary) return;
+  const { inp } = lastSummary;
+  const stem = [inp.dn, (inp.patient_name || '').trim().replace(/\s+/g, '_')].filter(Boolean).join('_')
+    .replace(/[\/\\:*?"<>|]/g, '') || 'SCA';
+  try {
+    const page = await summaryPage();
     const blob = await new Promise(res => page.toBlob(res, 'image/jpeg', 0.95));
     const filename = `${stem}_Diagnosis_Treatment_Plan.jpg`;
     // ใน Claude Artifact ลิงก์ดาวน์โหลดธรรมดาถูกบล็อก ต้องบันทึกผ่าน capability "downloads"
@@ -883,8 +900,27 @@ document.getElementById('save-jpeg').addEventListener('click', async () => {
   } catch (err) {
     alert('บันทึก JPEG ไม่สำเร็จ: ' + err.message);
     console.error(err);
-  } finally {
-    sxSheet.classList.remove('exporting');
+  }
+});
+// พิมพ์ใส่กระดาษ A4 — ใช้ภาพเดียวกับ JPEG จึงได้หน้าตาเหมือนกันทุกเครื่อง/ทุกเบราว์เซอร์
+document.getElementById('print-summary').addEventListener('click', async () => {
+  if (!lastSummary) return;
+  try {
+    const page = await summaryPage();
+    let box = document.getElementById('sx-print');
+    if (!box) { box = document.createElement('div'); box.id = 'sx-print'; document.body.appendChild(box); }
+    const img = new Image();
+    box.replaceChildren(img);
+    await new Promise((ok, bad) => { img.onload = ok; img.onerror = () => bad(new Error('สร้างภาพไม่สำเร็จ')); img.src = page.toDataURL('image/jpeg', 0.95); });
+    document.body.classList.add('print-summary');
+    const done = () => { document.body.classList.remove('print-summary'); box.replaceChildren(); };
+    window.addEventListener('afterprint', done, { once: true });
+    window.print();
+    if (window.scaTrack) scaTrack('summary_print');
+  } catch (err) {
+    document.body.classList.remove('print-summary');
+    alert('พิมพ์ไม่สำเร็จ: ' + err.message);
+    console.error(err);
   }
 });
 
