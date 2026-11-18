@@ -356,6 +356,11 @@ function drawPeriods(a, c, k){
     '<tbody>' + rows + '</tbody>';
 }
 
+// ชื่อเครื่องผู้ใช้พิมพ์เอง — กัน HTML แทรก
+function esc(t){
+  return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function drawDevices(list){
   const el = $('devices');
   if (!list.length) {
@@ -363,13 +368,13 @@ function drawDevices(list){
     return;
   }
   const rows = list.map((d, i) =>
-    `<tr><td>${i + 1}</td><td class="mono">${d.id}</td>` +
+    `<tr><td>${i + 1}</td><td>${d.name ? esc(d.name) : '<span class="muted">—</span>'}</td><td class="mono">${d.id}</td>` +
     `<td class="num">${d.sca || 0}</td><td class="num">${d.ceph || 0}</td>` +
     `<td class="num">${d.stock || 0}</td>` +
     `<td class="num"><b>${d.total || 0}</b></td>` +
     `<td class="mono">${d.first || '-'}</td><td class="mono">${d.last || '-'}</td></tr>`).join('');
   el.innerHTML =
-    '<thead><tr><th>#</th><th>รหัสเครื่อง</th><th class="num">SCA</th><th class="num">Ceph</th>' +
+    '<thead><tr><th>#</th><th>ชื่อเครื่อง</th><th>รหัสเครื่อง</th><th class="num">SCA</th><th class="num">Ceph</th>' +
     '<th class="num">หุ้น</th>' +
     '<th class="num">รวม</th><th>ใช้ครั้งแรก</th><th>ใช้ล่าสุด</th></tr></thead><tbody>' + rows + '</tbody>';
 }

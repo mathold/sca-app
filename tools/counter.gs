@@ -14,7 +14,7 @@
 var TZ = 'Asia/Bangkok';
 var LOG = 'log';
 var SUM = 'สรุป';
-var HEAD = ['เวลา (ไทย)', 'วันที่', 'app', 'event', 'detail', 'session', 'เวลาที่ชีตรับ'];
+var HEAD = ['เวลา (ไทย)', 'วันที่', 'app', 'event', 'detail', 'session', 'เวลาที่ชีตรับ', 'ชื่อเครื่อง'];
 
 function logSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -24,6 +24,8 @@ function logSheet_() {
     sh.appendRow(HEAD);
     sh.setFrozenRows(1);
   }
+  // ชีตเก่ามีแค่ 7 คอลัมน์ — เติมหัว "ชื่อเครื่อง" ให้เองครั้งแรก
+  if (sh.getRange(1, 8).getValue() === '') sh.getRange(1, 8).setValue(HEAD[7]);
   return sh;
 }
 
@@ -48,7 +50,7 @@ function doGet(e) {
 function stats_() {
   var sh = logSheet_();
   var last = sh.getLastRow();
-  var rows = (last > 1) ? sh.getRange(2, 1, last - 1, 7).getValues() : [];
+  var rows = (last > 1) ? sh.getRange(2, 1, last - 1, 8).getValues() : [];
   var today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
   var d7 = Utilities.formatDate(new Date(Date.now() - 6 * 86400000), TZ, 'yyyy-MM-dd');
   var d30 = Utilities.formatDate(new Date(Date.now() - 29 * 86400000), TZ, 'yyyy-MM-dd');
@@ -64,6 +66,7 @@ function stats_() {
   var out = { updated: Utilities.formatDate(new Date(), TZ, 'd/M/yyyy HH:mm'),
               apps: {}, daily: [], devices: [] };
   var dev = {};                       // รหัสเครื่อง -> จำนวนครั้งที่ใช้จริงแยกตามแอป
+  var names = {};                     // รหัสเครื่อง -> ชื่อที่ผู้ใช้ตั้ง (event 'name' หรือแนบมากับการใช้งาน)
   var u = {};
   APPS.forEach(function (a) {
     out.apps[a] = { users: 0, opens: 0, today: 0, d7: 0,
@@ -77,8 +80,9 @@ function stats_() {
 
   rows.forEach(function (r) {
     var day = dayKey(r[1]), app = String(r[2]), ev = String(r[3]),
-        detail = String(r[4]), sid = String(r[5]);
+        detail = String(r[4]), sid = String(r[5]), dname = String(r[7] || '');
     if (APPS.indexOf(app) < 0) return;
+    if (sid && dname) names[sid] = dname;   // ชื่อที่ผู้ใช้ตั้งเอง — แถวหลังสุดชนะ (เปลี่ยนชื่อได้)
     var o = out.apps[app], uu = u[app];
     if (sid) uu.all[sid] = 1;
     if (ev === 'open') {
@@ -131,7 +135,7 @@ function stats_() {
     o.calc_users = Object.keys(uu.calc).length;
   });
 
-  out.devices = Object.keys(dev).map(function (k) { return dev[k]; })
+  out.devices = Object.keys(dev).map(function (k) { if (names[k]) dev[k].name = names[k]; return dev[k]; })
                  .sort(function (a, b) { return b.total - a.total; });
 
   Object.keys(perDay).sort().forEach(function (d) {
@@ -153,7 +157,8 @@ function record_(e) {
       String(p.event || 'open').slice(0, 20),
       String(p.detail || '').slice(0, 60),
       String(p.session || '').slice(0, 40),
-      Utilities.formatDate(now, TZ, 'd/M/yyyy, HH:mm:ss')
+      Utilities.formatDate(now, TZ, 'd/M/yyyy, HH:mm:ss'),
+      String(p.name || '').slice(0, 40)
     ]);
   } catch (err) {}
   return ContentService.createTextOutput('ok');
