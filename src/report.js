@@ -1,22 +1,10 @@
-        // e.overjet = OJ ที่ทำนายว่าจะจบจริง (รวม retract บน/ล่าง และ canine ที่คุมแผนแล้ว)
-        ['Overjet', e.needs_surgery
-            ? `<b class="hot">${n2(e.overjet_ortho_phase)} mm</b> <span class="muted">(จบเฟสจัดฟัน — ที่เหลือปิดด้วยผ่าตัด)</span>`
-            : `${e.overjet_off_target ? `<b class="hot">${n1(e.overjet)} mm</b>` : n1(e.overjet) + ' mm'}<br><span class="muted">หลัง torque ${n2(w.oj_after_torque)} mm → retract บน ${n2(Math.max(r.canine.upper_retract_right ?? w.retract_upper, r.canine.upper_retract_left ?? w.retract_upper))} · ล่าง ${n2(Math.max(r.canine.lower_retract_right ?? w.retract_lower, r.canine.lower_retract_left ?? w.retract_lower))} mm</span>`,
-          '2 mm',
-          e.needs_surgery ? '<span class="hot">ต้องผ่าตัดร่วม</span>'
-            : !e.overjet_off_target ? '<span class="ok">ถึงเป้า</span>'
-            : (e.overjet < 2 && r.canine.canine_drives_by_mm > 0)
-              ? `<span class="hot">ต่ำกว่าเป้า — เขี้ยว Class II ดึงบนเกิน OJ ${n2(r.canine.canine_drives_by_mm)} mm</span>`
-            : (e.overjet < 2 && !r.root_torque_upper)
-              ? '<span class="hot">ต่ำกว่าเป้า — torque บนกิน OJ (ลอง buccal root torque)</span>'
-            : `<span class="hot">${e.overjet < 2 ? 'ต่ำกว่า' : 'เกิน'}เป้า</span>`],
 /* report.js — สร้าง HTML รายงานจากผลของ analyzeCase() */
 
 // เวอร์ชันของตรรกะการคำนวณ — ขึ้นทั้งบนหน้าจอและในรายงานที่พิมพ์ออกมา
 // เพื่อให้ตรวจได้ทันทีว่าใครถือเวอร์ชันไหนอยู่
 // เลื่อนเลขอัตโนมัติด้วย tools/bump.py (มี pre-commit hook เรียกให้เอง) — ไม่ต้องแก้มือ
-const APP_VERSION = '1.0.58';
-const APP_UPDATED = '27 ก.ย. 2569';
+const APP_VERSION = '1.0.59';
+const APP_UPDATED = '18 พ.ย. 2569';
 const APP_OWNER = 'หมอผิ่น';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -279,17 +267,18 @@ function renderReport(r, extraWarnings = []) {
           Math.abs(e.facc) <= 0.5 ? '<span class="ok">ถึงเป้า</span>' : '<span class="hot">ยังห่างเป้า</span>'],
         ['Interincisal 1/1', n1(e.interincisal) + '°' + (e.interincisal_capped ? ' · ถูกจำกัดด้วย IMPA floor' : ''), '125–131°',
           e.interincisal_in_range ? '<span class="ok">อยู่ในช่วง</span>' : '<span class="hot">นอกช่วง</span>'],
-        // overjet_ortho_phase = ค่าหลัง torque "ก่อน" retract A-P — ไม่ใช่ค่าเมื่อจบ
-        // ระยะ retract ถูกคิดเป็นพื้นที่ในงบไว้แล้ว แผนจึงปิด OJ ลงมาที่ 2 mm ตามเป้า
-        // (PDF ก็แสดง ep.overjet และโชว์ค่าเฟสจัดฟันเฉพาะตอนต้องผ่าตัด)
+        // e.overjet = OJ ที่ทำนายว่าจะจบจริง (รวม retract บน/ล่าง และ canine ที่คุมแผนแล้ว)
         ['Overjet', e.needs_surgery
             ? `<b class="hot">${n2(e.overjet_ortho_phase)} mm</b> <span class="muted">(จบเฟสจัดฟัน — ที่เหลือปิดด้วยผ่าตัด)</span>`
-            : `${n1(e.overjet)} mm<br><span class="muted">หลัง torque ${n2(w.oj_after_torque)} mm → retract ${n2(w.retract_total)} mm (บน ${n2(w.retract_upper)} · ล่าง ${n2(w.retract_lower)})</span>`,
+            : `${e.overjet_off_target ? `<b class="hot">${n1(e.overjet)} mm</b>` : n1(e.overjet) + ' mm'}<br><span class="muted">หลัง torque ${n2(w.oj_after_torque)} mm → retract บน ${n2(Math.max(r.canine.upper_retract_right ?? w.retract_upper, r.canine.upper_retract_left ?? w.retract_upper))} · ล่าง ${n2(Math.max(r.canine.lower_retract_right ?? w.retract_lower, r.canine.lower_retract_left ?? w.retract_lower))} mm</span>`,
           '2 mm',
           e.needs_surgery ? '<span class="hot">ต้องผ่าตัดร่วม</span>'
-            : (r.canine.canine_drives_by_mm > 0
-                ? `<span class="hot">canine คุมแผน → จะจบที่ ${n2(r.canine.overjet_if_canine_driven)} mm</span>`
-                : '<span class="ok">ถึงเป้า</span>')],
+            : !e.overjet_off_target ? '<span class="ok">ถึงเป้า</span>'
+            : (e.overjet < 2 && r.canine.canine_drives_by_mm > 0)
+              ? `<span class="hot">ต่ำกว่าเป้า — เขี้ยว Class II ดึงบนเกิน OJ ${n2(r.canine.canine_drives_by_mm)} mm</span>`
+            : (e.overjet < 2 && !r.root_torque_upper)
+              ? '<span class="hot">ต่ำกว่าเป้า — torque บนกิน OJ (ลอง buccal root torque)</span>'
+            : `<span class="hot">${e.overjet < 2 ? 'ต่ำกว่า' : 'เกิน'}เป้า</span>`],
         ['L1-APog', n1(e.l1_apog) + ' mm' + (e.l1_apog_in_range ? '' : ` (ขยับ ${n2(e.l1_apog_move)} mm)`), '1–3 mm',
           e.l1_apog_in_range ? '<span class="ok">อยู่ในช่วง</span>' : '<span class="hot">นอกช่วง</span>'],
         ['ต้องผ่าตัดไหม', e.needs_surgery ? '<b class="hot">ต้องพิจารณาผ่าตัด</b>' : 'ไม่ต้อง', 'ไม่ต้อง',

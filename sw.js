@@ -8,7 +8,7 @@
  *
  * VERSION ด้านล่าง tools/bump.py แก้ให้อัตโนมัติ — ไม่ต้องแก้มือ
  */
-const VERSION = '58';
+const VERSION = '59';
 const CACHE = 'sca-v' + VERSION;
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
