@@ -866,11 +866,19 @@ document.getElementById('save-jpeg').addEventListener('click', async () => {
     const k = Math.min(1, page.height / canvas.height);
     ctx.drawImage(canvas, (page.width - canvas.width * k) / 2, 0, canvas.width * k, canvas.height * k);
     const blob = await new Promise(res => page.toBlob(res, 'image/jpeg', 0.95));
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${stem}_Diagnosis_Treatment_Plan.jpg`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    const filename = `${stem}_Diagnosis_Treatment_Plan.jpg`;
+    // ใน Claude Artifact ลิงก์ดาวน์โหลดธรรมดาถูกบล็อก ต้องบันทึกผ่าน capability "downloads"
+    const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); }
+      catch (e) { if (e?.code !== 'declined') alert('บันทึก JPEG ไม่สำเร็จ (' + (e?.code || e) + ')'); }
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
     if (window.scaTrack) scaTrack('summary_jpeg');
   } catch (err) {
     alert('บันทึก JPEG ไม่สำเร็จ: ' + err.message);
