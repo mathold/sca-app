@@ -17,6 +17,7 @@ from pathlib import Path
 
 APP = Path(__file__).resolve().parent.parent
 XLSX_CDN = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+H2C_CDN = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
 
 
 def build(html: str) -> str:
@@ -39,6 +40,8 @@ def build(html: str) -> str:
     # 2. xlsx จาก cdnjs
     html = html.replace('<script src="vendor/xlsx.full.min.js"></script>',
                         '<script src="%s"></script>' % XLSX_CDN)
+    html = html.replace('<script src="vendor/html2canvas.min.js"></script>',
+                        '<script src="%s"></script>' % H2C_CDN)
 
     # 4. ไม่เอารหัสผ่านตัวจริงติดไปด้วย
     html = re.sub(r"\n \* รหัสปัจจุบัน: .*", "", html)
@@ -53,7 +56,7 @@ def main(argv):
     (out / "src").mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(
         build((APP / "index.html").read_text(encoding="utf-8")), encoding="utf-8")
-    for f in ("ortho_calc.js", "analyze.js", "sca_xlsx.js", "report.js", "plan_sheets.js"):
+    for f in ("ortho_calc.js", "analyze.js", "sca_xlsx.js", "report.js", "plan_sheets.js", "summary.js"):
         shutil.copy2(APP / "src" / f, out / "src" / f)
     print("สร้างไฟล์สำหรับ Artifact ที่ %s" % out)
     for p in sorted(out.rglob("*")):

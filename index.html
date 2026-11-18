@@ -253,6 +253,46 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
   .verdict{text-align:left}
   .v-line{justify-content:flex-start}
 }
+
+/* ---------- แท็บ Diagnosis and Treatment Plan (ใบ Summary IX–X) ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.tabs button{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:600}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sx-hint{font-size:13px;color:var(--muted);margin:0 0 8px}
+.sx-wrap{overflow-x:auto;background:#e9ebef;border-radius:10px;padding:10px 0}
+.sx{--sx-ink:#1c3d9c;width:210mm;min-height:297mm;margin:0 auto;padding:9mm 10mm 8mm;background:#fff;color:#222;
+  box-shadow:0 2px 12px rgba(0,0,0,.18);font-family:"Times New Roman","Noto Serif Thai",serif;font-size:11pt;box-sizing:border-box}
+.sx *{box-sizing:border-box}
+.sx [contenteditable]{font-family:"Noto Sans Thai","Thonburi",sans-serif;color:var(--sx-ink);font-size:9.5pt;line-height:1.35;outline:none;border-radius:2px;min-width:8mm}
+.sx [contenteditable]:hover{background:#fff8d6}
+.sx [contenteditable]:focus{background:#fff3b0}
+.sx span[contenteditable]{display:inline-block}
+.sx.exporting [contenteditable],.sx.exporting .sx-box{background:none !important}
+.sx .top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5mm}
+.sx .top [contenteditable]{font-size:10pt}
+.sx h1{text-align:center;font-size:13pt;font-weight:normal;margin:0 0 1.5mm;color:#222;letter-spacing:0}
+.sx h2{font-size:11pt;font-weight:normal;margin:3mm 0 1.2mm 3mm;color:#222}
+.sx table{width:100%;border-collapse:collapse;border:1.3px solid #333;table-layout:fixed;margin:0}
+.sx td{vertical-align:top;padding:1.5mm 2.5mm;border:0;border-left:1px solid #aaa;text-align:left}
+.sx td:first-child{border-left:none}
+.sx tr.sep td{border-top:1px solid #ddd}
+.sx .lbl{font-size:10.5pt}
+.sx .small{font-size:6.5pt}
+.sx .sx-box{cursor:pointer;user-select:none;-webkit-user-select:none;white-space:nowrap}
+.sx .sx-box::before{content:"☐";display:inline-block;width:1.15em;font-family:"Apple Symbols","Segoe UI Symbol",sans-serif}
+.sx .sx-box.on::before{content:"☑";color:var(--sx-ink)}
+.sx .cbs .sx-box{display:inline-block;width:31%;font-size:10.5pt;margin:.6mm 0}
+.sx .row{display:flex;align-items:center;gap:3mm}
+.sx .cross{display:grid;grid-template-columns:1fr 1fr;width:34mm;margin:1mm 0}
+.sx .cross>div{height:6.5mm;text-align:center;font-size:9.5pt;line-height:6.5mm;overflow:hidden}
+.sx .cross>div:nth-child(1){border-right:1.3px solid #333;border-bottom:1.3px solid #333}
+.sx .cross>div:nth-child(2){border-bottom:1.3px solid #333}
+.sx .cross>div:nth-child(3){border-right:1.3px solid #333}
+.sx .cross.sm{width:26mm}
+.sx .cross.sm>div{height:4.5mm;line-height:4.5mm;font-size:8pt}
+.sx .lines>div[contenteditable]{border-bottom:1px solid #bbb;padding:.4mm 0;min-height:5.5mm}
+.sx ul[contenteditable]{margin:.5mm 0 0 0;padding-left:4mm;min-height:5mm}
+.sx .foot{display:flex;justify-content:space-between;font-size:8.5pt;margin-top:1.5mm}
 </style>
 </head>
 <body>
@@ -324,11 +364,21 @@ button.lock:hover{color:var(--ink);border-color:var(--muted)}
 </div>
 
 <div id="view-report" hidden>
+  <div class="tabs noprint" role="tablist">
+    <button type="button" class="on" id="tab-report" role="tab">รายงานวิเคราะห์</button>
+    <button type="button" id="tab-summary" role="tab">Diagnosis and Treatment Plan</button>
+  </div>
   <div class="actions noprint">
     <button type="button" class="ghost" id="back">← กลับไปแก้ค่า</button>
     <button type="button" class="primary" id="print">บันทึกเป็น PDF / พิมพ์</button>
+    <button type="button" class="primary" id="save-jpeg" hidden>💾 บันทึกเป็น JPEG</button>
+    <button type="button" class="ghost" id="reset-summary" hidden>↺ กลับค่าเดิม</button>
   </div>
-  <table class="print-frame">
+  <div id="pane-summary" class="noprint" hidden>
+    <p class="sx-hint">กรอกให้อัตโนมัติจากแผนที่คำนวณ · คลิกข้อความสีน้ำเงินเพื่อแก้ · คลิก ☐ เพื่อติ๊ก · แล้วกด “บันทึกเป็น JPEG”</p>
+    <div class="sx-wrap"><div class="sx" id="summary-sheet"></div></div>
+  </div>
+  <table class="print-frame" id="pane-report">
     <tbody><tr><td><div class="card" id="report"></div></td></tr></tbody>
     <tfoot class="print-foot"><tr><td>
       <div class="print-mark" aria-hidden="true">
@@ -513,11 +563,13 @@ document.getElementById('lock').addEventListener('click', () => {
 });
 </script>
 <script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/html2canvas.min.js"></script>
 <script type="module">
 import { makeCase } from './src/ortho_calc.js';
 import { analyzeCase } from './src/analyze.js';
 import { readScaWorkbook, suggestGrowthPattern } from './src/sca_xlsx.js';
 import { renderReport, APP_VERSION, APP_UPDATED } from './src/report.js';
+import { readSummaryExtras, buildSummary, renderSummary } from './src/summary.js';
 document.getElementById('ver').textContent = `เวอร์ชัน ${APP_VERSION} · แก้ล่าสุด ${APP_UPDATED}`
   + (window.scaDeviceId ? ` · รหัสเครื่องนี้ ${window.scaDeviceId()}` : '');
 
@@ -683,6 +735,7 @@ function collectForm() {
 
 /* ---------- อ่านไฟล์ ---------- */
 let readWarnings = [];
+let summaryExtras = null;   // NB angle, molar migration, แผนคุณหมอในตารางแดง — มีเฉพาะเมื่ออ่านจากไฟล์
 
 async function handleFile(file) {
   const msg = document.getElementById('load-msg');
@@ -695,6 +748,7 @@ async function handleFile(file) {
     const { input, warnings, sheet } = readScaWorkbook(wb);
     fillForm(input);
     readWarnings = warnings;
+    try { summaryExtras = readSummaryExtras(wb); } catch (e) { summaryExtras = null; console.error(e); }
     msg.textContent = `อ่าน "${file.name}" (ชีต ${sheet}) เรียบร้อย — ตรวจค่าก่อนคำนวณได้เลย`;
     if (warnings.length) {
       warnBox.innerHTML = `<div class="alert"><b>ตรวจก่อนคำนวณ</b><ul>${warnings.map(w => `<li>${w.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('')}</ul></div>`;
@@ -728,6 +782,9 @@ document.getElementById('calc').addEventListener('click', () => {
     const inp = collectForm();
     const r = analyzeCase(makeCase(inp));
     document.getElementById('report').innerHTML = renderReport(r, readWarnings);
+    lastSummary = { inp, html: renderSummary(inp, buildSummary(inp, r, summaryExtras)) };
+    loadSummary();
+    showTab('report');
     document.getElementById('view-input').hidden = true;
     document.getElementById('view-report').hidden = false;
     window.scrollTo(0, 0);
@@ -752,7 +809,75 @@ document.getElementById('clear').addEventListener('click', () => {
   document.getElementById('load-msg').textContent = '';
   document.getElementById('read-warn').innerHTML = '';
   readWarnings = [];
+  summaryExtras = null;
   try { localStorage.removeItem('sca.last'); } catch {}
+});
+
+/* ---------- แท็บ Diagnosis and Treatment Plan ----------
+ * ใบ IX–X กรอกจากผลคำนวณ (src/summary.js = พอร์ตของ make_summary.py)
+ * แก้ข้อความได้ จำที่แก้ไว้ในเครื่องต่อ DN · บันทึกเป็น JPEG A4 1654×2339 ด้วย html2canvas
+ */
+let lastSummary = null;
+const sxSheet = document.getElementById('summary-sheet');
+const sxKey = () => 'sca.summary.' + (lastSummary?.inp?.dn || '-') + '.' + (lastSummary ? lastSummary.html.length : 0);
+function bindBoxes() {
+  sxSheet.querySelectorAll('.sx-box').forEach(b => { b.onclick = () => { b.classList.toggle('on'); storeSummary(); }; });
+}
+function storeSummary() { try { localStorage.setItem(sxKey(), sxSheet.innerHTML); } catch {} }
+function loadSummary() {
+  let saved = null;
+  try { saved = localStorage.getItem(sxKey()); } catch {}
+  sxSheet.innerHTML = saved || lastSummary.html;
+  bindBoxes();
+}
+sxSheet.addEventListener('input', storeSummary);
+function showTab(which) {
+  const sum = which === 'summary';
+  document.getElementById('tab-report').classList.toggle('on', !sum);
+  document.getElementById('tab-summary').classList.toggle('on', sum);
+  document.getElementById('pane-report').hidden = sum;
+  document.getElementById('pane-summary').hidden = !sum;
+  document.getElementById('print').hidden = sum;
+  document.getElementById('save-jpeg').hidden = !sum;
+  document.getElementById('reset-summary').hidden = !sum;
+}
+document.getElementById('tab-report').addEventListener('click', () => showTab('report'));
+document.getElementById('tab-summary').addEventListener('click', () => { showTab('summary'); if (window.scaTrack) scaTrack('summary'); });
+document.getElementById('reset-summary').addEventListener('click', () => {
+  if (!lastSummary || !confirm('กลับเป็นค่าเดิมที่ระบบกรอกไว้? ที่แก้ไว้จะหายหมด')) return;
+  try { localStorage.removeItem(sxKey()); } catch {}
+  sxSheet.innerHTML = lastSummary.html; bindBoxes();
+});
+document.getElementById('save-jpeg').addEventListener('click', async () => {
+  if (!lastSummary) return;
+  if (typeof html2canvas !== 'function') { alert('โหลดตัวสร้างภาพไม่สำเร็จ — ลองเปิดหน้าใหม่ขณะออนไลน์'); return; }
+  if (document.activeElement) document.activeElement.blur();
+  const { inp } = lastSummary;
+  const stem = [inp.dn, (inp.patient_name || '').trim().replace(/\s+/g, '_')].filter(Boolean).join('_')
+    .replace(/[\/\\:*?"<>|]/g, '') || 'SCA';
+  sxSheet.classList.add('exporting');
+  try {
+    const canvas = await html2canvas(sxSheet, { scale: 1654 / sxSheet.offsetWidth, backgroundColor: '#ffffff', useCORS: true });
+    // วางลงหน้า A4 พอดี 1654×2339 (200 dpi) — ข้อความยาวเกินหน้าเล็กน้อยจะถูกย่อลงให้พอดีหน้า
+    const page = document.createElement('canvas');
+    page.width = 1654; page.height = 2339;
+    const ctx = page.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, page.width, page.height);
+    const k = Math.min(1, page.height / canvas.height);
+    ctx.drawImage(canvas, (page.width - canvas.width * k) / 2, 0, canvas.width * k, canvas.height * k);
+    const blob = await new Promise(res => page.toBlob(res, 'image/jpeg', 0.95));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${stem}_Diagnosis_Treatment_Plan.jpg`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (window.scaTrack) scaTrack('summary_jpeg');
+  } catch (err) {
+    alert('บันทึก JPEG ไม่สำเร็จ: ' + err.message);
+    console.error(err);
+  } finally {
+    sxSheet.classList.remove('exporting');
+  }
 });
 
 // คืนค่าที่กรอกค้างไว้ (เก็บในเครื่องผู้ใช้เท่านั้น)
