@@ -53,7 +53,7 @@ def main(argv):
     (out / "src").mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(
         build((APP / "index.html").read_text(encoding="utf-8")), encoding="utf-8")
-    for f in ("ortho_calc.js", "analyze.js", "sca_xlsx.js", "report.js"):
+    for f in ("ortho_calc.js", "analyze.js", "sca_xlsx.js", "report.js", "plan_sheets.js"):
         shutil.copy2(APP / "src" / f, out / "src" / f)
     print("สร้างไฟล์สำหรับ Artifact ที่ %s" % out)
     for p in sorted(out.rglob("*")):
