@@ -110,7 +110,9 @@ const ASSUMPTIONS = {
   l1apog_ipr_guard_mm: 3.0,
   protraction_max_mm: 1.0,        // ดึงฟันทั้งซี่มาหน้าได้ไม่เกินนี้ (procline ไม่ติดเพดานนี้)
   molar_protraction_max_mm: 7.0,  // molar เดินมาหน้าได้ไม่เกินนี้ เกินกว่านี้ควรใส่ฟัน
-  eline_protrusive_mm: 0.0,       // ริมฝีปากล่างต่อ E-line เกินค่านี้ = โปรไฟล์ยื่น   // ดึงฟันล่างให้ L1-APog=3 แล้วต้อง IPR เกินค่านี้ -> ไม่ดึงเพิ่ม
+  eline_protrusive_mm: 0.0,       // ริมฝีปากล่างต่อ E-line เกินค่านี้ = โปรไฟล์ยื่น
+  eline_norm_upper: -2.0,         // norm E-line คนไทย (ไม่ใช้ Ricketts −4/−2) — คุณหมอ 23 ก.ย. 2569
+  eline_norm_lower: 0.0,          // เกิน norm = ยื่น · ต่ำกว่า norm เกิน 2 mm = ถอย
   expansion_gain_ratio: 0.7,
   ipr_max_per_arch: 6.0,
   distalize_default_mm: 3.0,
@@ -461,10 +463,8 @@ function autoDiagnosis(inp) {
   if (inp.growth_pattern === 'high_angle') parts.push('Vertical Growth Pattern (High Angle)');
   else if (inp.growth_pattern === 'low_angle') parts.push('Horizontal Growth Pattern (Low Angle)');
 
-  if ((inp.eline_upper_lip !== null && inp.eline_upper_lip !== undefined && inp.eline_upper_lip > 4)
-    && (inp.eline_lower_lip !== null && inp.eline_lower_lip !== undefined && inp.eline_lower_lip > 2)) {
-    parts.push('Bimaxillary Protrusion');
-  }
+  const eline = elineProfile(inp.eline_upper_lip, inp.eline_lower_lip);
+  if (eline) parts.push(eline);
 
   const crowding = [];
   if (inp.tooth_size_discrepancy_upper < 0) {
@@ -485,21 +485,40 @@ function autoDiagnosis(inp) {
   return parts.join(', ') + ' (ประเมินอัตโนมัติจากค่า SCA — โปรดให้ทันตแพทย์ยืนยัน/แก้ไข)';
 }
 
+// 'pro' = ยื่นกว่า norm · 'ret' = ถอยกว่า norm เกิน 2 mm · null = ปกติ/ไม่มีข้อมูล
+function elineStatus(lip, norm) {
+  if (lip === null || lip === undefined) return null;
+  if (lip > norm) return 'pro';
+  if (lip < norm - 2) return 'ret';
+  return null;
+}
+
+// ป้าย soft tissue profile สำหรับบรรทัด Diagnosis (ไม่มีผลต่อแผนการรักษา)
+function elineProfile(upperLip, lowerLip) {
+  const u = elineStatus(upperLip, ASSUMPTIONS.eline_norm_upper);
+  const l = elineStatus(lowerLip, ASSUMPTIONS.eline_norm_lower);
+  if (u === 'pro' && l === 'pro') return 'Bimaxillary Lip Protrusion (Convex Profile)';
+  if (u === 'ret' && l === 'ret') return 'Retrusive Lips (Flat/Concave Profile)';
+  if (u === 'pro' && l === 'ret') return 'Protrusive Upper Lip / Retrusive Lower Lip';
+  if (u === 'ret' && l === 'pro') return 'Retrusive Upper Lip / Protrusive Lower Lip';
+  if (u) return u === 'pro' ? 'Protrusive Upper Lip' : 'Retrusive Upper Lip';
+  if (l) return l === 'pro' ? 'Protrusive Lower Lip' : 'Retrusive Lower Lip';
+  return null;
+}
+
 function elineAdvice(upperLip, lowerLip) {
   const u = (upperLip === undefined) ? null : upperLip;
   const l = (lowerLip === undefined) ? null : lowerLip;
   if (u === null && l === null) {
     return 'ไม่มีข้อมูล E-line ในตาราง SCA — แนะนำประเมิน soft tissue profile เพิ่มเติมจากภาพถ่ายด้านข้างใบหน้า';
   }
+  const nu = ASSUMPTIONS.eline_norm_upper, nl = ASSUMPTIONS.eline_norm_lower;
   const notes = [];
-  if (u !== null) {
-    if (u > 4) notes.push(`ริมฝีปากบนยื่นเกิน norm (~4mm), วัดได้ ${pyFloatStr(u)}mm — สนับสนุน extraction/retraction มากขึ้น`);
-    else if (u < -2) notes.push(`ริมฝีปากบนถอยเกิน norm, วัดได้ ${pyFloatStr(u)}mm — ระวัง over-retraction`);
-  }
-  if (l !== null) {
-    if (l > 2) notes.push(`ริมฝีปากล่างยื่นเกิน norm (~2mm), วัดได้ ${pyFloatStr(l)}mm — สนับสนุน extraction/retraction มากขึ้น`);
-    else if (l < -2) notes.push(`ริมฝีปากล่างถอยเกิน norm, วัดได้ ${pyFloatStr(l)}mm — ระวัง over-retraction`);
-  }
+  const su = elineStatus(u, nu), sl = elineStatus(l, nl);
+  if (su === 'pro') notes.push(`ริมฝีปากบนยื่นเกิน norm (${nu}mm), วัดได้ ${pyFloatStr(u)}mm — สนับสนุน extraction/retraction มากขึ้น`);
+  else if (su === 'ret') notes.push(`ริมฝีปากบนถอยเกิน norm (${nu}mm), วัดได้ ${pyFloatStr(u)}mm — ระวัง over-retraction`);
+  if (sl === 'pro') notes.push(`ริมฝีปากล่างยื่นเกิน norm (${nl}mm), วัดได้ ${pyFloatStr(l)}mm — สนับสนุน extraction/retraction มากขึ้น`);
+  else if (sl === 'ret') notes.push(`ริมฝีปากล่างถอยเกิน norm (${nl}mm), วัดได้ ${pyFloatStr(l)}mm — ระวัง over-retraction`);
   return notes.length ? notes.join(' | ') : 'อยู่ในช่วงใกล้เคียง norm';
 }
 
