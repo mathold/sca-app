@@ -78,6 +78,7 @@ function stats_() {
     u[a] = { all: {}, today: {}, d7: {}, m1: {}, m3: {}, m6: {}, y1: {}, gate: {}, calc: {}, dl: {} };
   });
   var perDay = {};
+  var perDayOpens = {};               // วัน -> แอป -> จำนวนครั้งที่ใช้จริง (ตารางรายวัน)
 
   rows.forEach(function (r) {
     var day = dayKey(r[1]), app = String(r[2]), ev = String(r[3]),
@@ -126,6 +127,8 @@ function stats_() {
         APPS.forEach(function (a) { perDay[day][a] = {}; });
       }
       if (sid) perDay[day][app][sid] = 1;
+      if (!perDayOpens[day]) perDayOpens[day] = {};
+      if (ev === 'open') perDayOpens[day][app] = (perDayOpens[day][app] || 0) + 1;
     }
   });
 
@@ -148,7 +151,10 @@ function stats_() {
 
   Object.keys(perDay).sort().forEach(function (d) {
     var row = { date: d };
-    APPS.forEach(function (a) { row[a] = Object.keys(perDay[d][a]).length; });
+    APPS.forEach(function (a) {
+      row[a] = Object.keys(perDay[d][a]).length;          // เครื่องไม่ซ้ำ
+      row[a + '_opens'] = (perDayOpens[d] || {})[a] || 0; // จำนวนครั้ง
+    });
     out.daily.push(row);
   });
   return out;

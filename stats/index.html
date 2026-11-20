@@ -168,6 +168,17 @@ a{color:var(--series-1)}
     </section>
 
     <section>
+      <h2 class="sec">แยกรายวัน — แต่ละวันมีคนใช้เท่าไหร่ (30 วันล่าสุด)</h2>
+      <div class="chart-card">
+        <div class="scroller"><table class="tbl" id="days"></table></div>
+        <p class="muted" style="margin:8px 2px 10px">
+          ใหม่สุดอยู่บน · แสดงเฉพาะวันที่มีการใช้งาน · <b>เครื่อง</b> = จำนวนเครื่องที่ไม่ซ้ำกันในวันนั้น ·
+          <b>ครั้ง</b> = จำนวนการใช้งานจริง
+        </p>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sec">ผู้ใช้ต่อวัน — 30 วันล่าสุด (นับเครื่องที่ไม่ซ้ำ)</h2>
       <div class="chart-card">
         <div class="legend">
@@ -319,6 +330,7 @@ async function load(){
     drawPeriods(a, c, k);
     drawDevices(d.devices || []);
     DAILY = d.daily || [];
+    drawDays(DAILY);
     drawChart(DAILY);
     drawTable(DAILY);
     $('updated').textContent = 'อัปเดตล่าสุด ' + d.updated + ' น.';
@@ -470,6 +482,33 @@ function drawChart(rows){
   });
   host.addEventListener('mouseleave', () => tip.style.opacity = '0');
 }
+
+function drawDays(rows){
+  const el = $('days');
+  const used = rows.filter(r => APP_KEYS.some(k => r[k] || r[k + '_opens']));
+  if (!used.length) {
+    el.innerHTML = '<tbody><tr><td class="muted" style="padding:14px">ยังไม่มีข้อมูลการใช้งาน</td></tr></tbody>';
+    return;
+  }
+  const n = (v) => (v == null ? '—' : v);   // ตัวนับรุ่นเก่ายังไม่ส่งจำนวนครั้งรายวัน
+  const wd = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+  el.innerHTML =
+    '<thead><tr><th rowspan="2">วันที่</th>' +
+    '<th class="num" colspan="2">SCA App</th>' +
+    '<th class="num" colspan="2">Ceph Protractor</th>' +
+    '<th class="num" colspan="2">กราฟหุ้นไทย</th>' +
+    '<th class="num" rowspan="2">รวม (ครั้ง)</th></tr>' +
+    '<tr>' + '<th class="num">เครื่อง</th><th class="num">ครั้ง</th>'.repeat(3) + '</tr></thead><tbody>' +
+    used.slice().reverse().map(r => {
+      const day = wd[new Date(r.date + 'T00:00:00').getDay()];
+      const total = APP_KEYS.reduce((s, k) => s + (r[k + '_opens'] || 0), 0);
+      return `<tr><td class="mono">${day} ${thDate(r.date)}</td>` +
+        APP_KEYS.map(k =>
+          `<td class="num">${r[k] || 0}</td><td class="num">${n(r[k + '_opens'])}</td>`).join('') +
+        `<td class="num"><b>${r.sca_opens == null ? '—' : total}</b></td></tr>`;
+    }).join('') + '</tbody>';
+}
+const APP_KEYS = ['sca', 'ceph', 'stock'];
 
 function drawTable(rows){
   if (!rows.length) { $('table').innerHTML = ''; return; }
